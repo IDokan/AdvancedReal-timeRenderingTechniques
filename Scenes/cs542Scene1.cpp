@@ -133,12 +133,12 @@ void Scene1::LoadAllShaders()
 	fboCheckShader = LoadShaders("../Common/shaders/CheckRenderedTextureByFBO.vert",
 		"../Common/shaders/CheckRenderedTextureByFBO.frag");
 
-	hybridFirstPass = LoadShaders("../Common/shaders/HybridRendering/As4FirstPassShader.vert",
-		"../Common/shaders/HybridRendering/As4FirstPassShader.frag");
+	hybridFirstPass = LoadShaders("../Common/542Shaders/As1FirstPassShader.vert",
+		"../Common/542Shaders/As1FirstPassShader.frag");
 	assimpHybridFirstPass = new AssimpShader(hybridFirstPass);
 
-	hybridPhong = LoadShaders("../Common/shaders/HybridRendering/As4HybridPhong.vert",
-		"../Common/shaders/HybridRendering/As4HybridPhong.frag");
+	hybridPhong = LoadShaders("../Common/542Shaders/As1HybridPhong.vert",
+		"../Common/542Shaders/As1HybridPhong.frag");
 }
 
 int Scene1::preRender()
@@ -311,6 +311,8 @@ void Scene1::Draw2ndPass()
 
 	floorObjMesh->SendUniformFloat3("cameraPosition", &c.x);
 
+	floorObjMesh->SendUniformInt("width", width);
+	floorObjMesh->SendUniformInt("height", height);
 	floorObjMesh->SendUniformFloat3("ambient", &ambient.x);
 	floorObjMesh->SendUniformFloat3("diffuse", &diffuse.x);
 	floorObjMesh->SendUniformFloat3("specular", &specular.x);
@@ -727,17 +729,17 @@ void Scene1::DrawGBufferRenderTargets()
 
 	floorObjMesh->PrepareDrawing();
 	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[1][0][0]);
-	textureManager.ActivateTexture(fboCheckShader, "UVBuffer", "tex");
+	textureManager.ActivateTexture(fboCheckShader, "normalBuffer", "tex");
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
 
 	floorObjMesh->PrepareDrawing();
 	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[2][0][0]);
-	textureManager.ActivateTexture(fboCheckShader, "normalBuffer", "tex");
+	textureManager.ActivateTexture(fboCheckShader, "diffuseBuffer", "tex");
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
 	floorObjMesh->PrepareDrawing();
 	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[3][0][0]);
-	textureManager.ActivateTexture(fboCheckShader, "depthBuffer", "tex");
+	textureManager.ActivateTexture(fboCheckShader, "specularBuffer", "tex");
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 }

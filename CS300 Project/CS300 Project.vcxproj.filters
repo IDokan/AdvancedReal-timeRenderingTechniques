@@ -55,6 +55,9 @@
     <Filter Include="Scenes">
       <UniqueIdentifier>{44ac2f8f-2c09-4fe5-8d96-df288d8584f8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Common\542Shaders">
+      <UniqueIdentifier>{11b6a738-360d-4e86-af3a-4d4c588f506b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\1.0 - Simple Scene\GLApplication.cpp">
@@ -348,6 +351,18 @@
     </None>
     <None Include="..\Common\shaders\HybridRendering\As4FirstPassShader.vert">
       <Filter>Common\shaders\HybridRendering</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As1FirstPassShader.frag">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As1FirstPassShader.vert">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As1HybridPhong.frag">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As1HybridPhong.vert">
+      <Filter>Common\542Shaders</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

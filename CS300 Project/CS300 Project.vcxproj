@@ -243,6 +243,10 @@ xcopy /y /d "..\ThirdParty\assimp\lib\*.dll" "$(TargetDir)"</Command>
     <ClInclude Include="..\Scenes\cs542Scene1.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\Common\542Shaders\As1FirstPassShader.frag" />
+    <None Include="..\Common\542Shaders\As1FirstPassShader.vert" />
+    <None Include="..\Common\542Shaders\As1HybridPhong.frag" />
+    <None Include="..\Common\542Shaders\As1HybridPhong.vert" />
     <None Include="..\Common\ppms\black.ppm" />
     <None Include="..\Common\ppms\grid.ppm" />
     <None Include="..\Common\ppms\metal_roof_diff_512x512.ppm" />

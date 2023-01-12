@@ -33,7 +33,7 @@ End Header --------------------------------------------------------*/
 // Local / project headers
 #include "../Common/Scene.h"
 #include "shader.hpp"
-#include "../Scenes/as1Scene.h"
+#include "../Scenes/cs542Scene1.h"
 #include <../Common/Input.h>
 
 //////////////////////////////////////////////////////////////////////
@@ -206,7 +206,7 @@ int main()
     glfwSetInputMode(guiWindow, GLFW_STICKY_KEYS, GL_TRUE);
 
     // Initialize the scene
-    scene = new AS1Scene(windowWidth, windowHeight);
+    scene = new Scene1(windowWidth, windowHeight);
 
     // Scene::Init encapsulates setting up the geometry and the texture
     // information for the scene
