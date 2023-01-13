@@ -184,6 +184,6 @@ void main()
 	float distanceView = texture(diffuseBuffer, uv).a;
 	float s = (zFar - distanceView) / (zFar - zNear);
 	color = s*color + (1-s)*intensityFog;
-
+	
 	outColor = vec4(color, texture(specularBuffer, uv).a);
 }

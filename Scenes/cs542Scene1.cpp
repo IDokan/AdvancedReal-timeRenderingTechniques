@@ -71,7 +71,7 @@ Scene1::Scene1(int width, int height)
 	relativeUp = Vector(0.f, 1.f, 0.f);
 
 	ambient = glm::vec3(0.7f);
-	diffuse = glm::vec3(0.5f);
+	diffuse = glm::vec3(1.f);
 	specular = glm::vec3(0.3f);
 	ns = 1.f;
 	intensityEmissive = glm::vec3(0.04f);
@@ -160,7 +160,7 @@ int Scene1::preRender()
 	modelMatrix = 
 		glm::rotate(180.f * displacementToPi, glm::vec3(0.f, 1.f, 0.f)) *
 		glm::scale(scaleVector) * model->CalcAdjustBoundingBoxMatrix();
-	floorMatrix = glm::translate(glm::vec3(0.f, -5.f, 0.f)) * glm::rotate(glm::half_pi<float>(), glm::vec3(1.f, 0.f, 0.f)) * glm::scale(glm::vec3(10.f, 10.f, 1.f)) * floorMesh->calcAdjustBoundingBoxMatrix();
+	floorMatrix = glm::translate(glm::vec3(0.f, -1.f, 0.f)) * glm::rotate(glm::half_pi<float>(), glm::vec3(1.f, 0.f, 0.f)) * glm::scale(glm::vec3(10.f, 10.f, 1.f)) * floorMesh->calcAdjustBoundingBoxMatrix();
 
 	for (int i = 0; i < 4; i++)
 	{
@@ -297,12 +297,10 @@ void Scene1::Draw2ndPass()
 	floorObjMesh->SetShader(hybridPhong);
 	floorObjMesh->PrepareDrawing();
 
-	textureManager.ActivateTexture(floorObjMesh->GetShader(), "diffuseTexture");
-	textureManager.ActivateTexture(floorObjMesh->GetShader(), "specularTexture");
+	textureManager.ActivateTexture(floorObjMesh->GetShader(), "diffuseBuffer");
+	textureManager.ActivateTexture(floorObjMesh->GetShader(), "specularBuffer");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "positionBuffer");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "normalBuffer");
-	textureManager.ActivateTexture(floorObjMesh->GetShader(), "UVBuffer");
-	textureManager.ActivateTexture(floorObjMesh->GetShader(), "depthBuffer");
 
 	glm::mat4 diffuseObjToWorld = glm::translate(glm::vec3(-1.f, -1.f, 0.f)) * glm::scale(glm::vec3(2.f));
 	floorObjMesh->SendUniformFloatMatrix4("objToWorld", &diffuseObjToWorld[0][0]);
@@ -410,6 +408,10 @@ void Scene1::Draw1stPass()
 
 	floorObjMesh->SendUniformFloatMatrix4("objToWorld", &floorMatrix[0][0]);
 	floorObjMesh->SendUniformFloatMatrix4("worldToNDC", &worldToNDC[0][0]);
+	glm::vec3 floorDiffuse(1.f, 1.f, 1.f);
+	glm::vec3 floorSpecular(0.3f, 0.3f, 0.3f);
+	floorObjMesh->SendUniformFloat3("diffuse", &floorDiffuse[0]);
+	floorObjMesh->SendUniformFloat3("specular", &floorSpecular[0]);
 
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
@@ -418,6 +420,8 @@ void Scene1::Draw1stPass()
 	assimpHybridFirstPass->Use();
 	assimpHybridFirstPass->SendUniformFloatMatrix4("objToWorld", &modelMatrix[0][0]);
 	assimpHybridFirstPass->SendUniformFloatMatrix4("worldToNDC", &worldToNDC[0][0]);
+	assimpHybridFirstPass->SendUniformFloat3("diffuse", &diffuse[0]);
+	assimpHybridFirstPass->SendUniformFloat3("specular", &specular[0]);
 	model->Draw(hybridFirstPass);
 
 	

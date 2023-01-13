@@ -15,20 +15,21 @@
 
 in vec3 fragPos;
 in vec3 fragNormal;
-in vec3 fragUV;
+
+uniform vec3 diffuse;
+uniform vec3 specular;
 
 // Writing the output data into our GBuffer
 layout (location = 0) out vec4 positionBuffer;
 layout (location = 1) out vec4 normalBuffer;
-layout (location = 2) out vec4 diffuseBuffer;		// a value is depth
+layout (location = 2) out vec4 diffuseBuffer;
 layout (location = 3) out vec4 specularBuffer;		// a value is alpha
 
 void main()
 {
 	positionBuffer.xyz = fragPos;
 	normalBuffer.xyz = normalize(fragNormal);
-	diffuseBuffer.xyz = fragUV;
-	diffuseBuffer.w = length(fragPos);
+	diffuseBuffer = vec4(diffuse, 1);
 	
-	specularBuffer = vec4(1, 1, 1, 1);
+	specularBuffer = vec4(specular, 1);
 }

@@ -25,7 +25,6 @@ out vec4 vertexPosition;
 out vec2 uv;
 
 out vec3 view;
-out float distanceView;
 
 void main()
 {

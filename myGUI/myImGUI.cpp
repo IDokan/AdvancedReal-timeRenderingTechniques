@@ -304,7 +304,7 @@ void MyImGUI::Helper::LightRepresenter(std::string identifier, int index)
     static int type = 0;
     type = MyImGUI::Helper::GetCurrentLightType(index);
 
-    const char* lightTypes[] = { "Point", "Spot", "Directional" };
+    const char* lightTypes[] = { "Point", "Spot" };
     ImGui::Combo(std::string(std::string("LightType") + identifier).c_str(), &type, lightTypes, IM_ARRAYSIZE(lightTypes));
     static bool stopLight = false;
     stopLight = lightm->GetLightReference(index).GetShouldStopLight();
@@ -354,9 +354,6 @@ void MyImGUI::Helper::SetCurrentLightType(int index, int t)
     case 1:
         lightProperties[index * LightManager::propertySize + 4]->x = static_cast<float>(Light::LightType::Spot);
         break;
-    case 2:
-        lightProperties[index * LightManager::propertySize + 4]->x = static_cast<float>(Light::LightType::Directional);
-        break;
     default:
         break;
     }
@@ -395,6 +392,9 @@ void MyImGUI::Helper::Models()
         {
             *shouldReload = true;
         }
+
+        ImGui::SliderFloat3("Model Diffuse", diffuse, 0.f, 1.f);
+        ImGui::SliderFloat3("Model Specular", specular, 0.f, 1.f);
     }
 }
 
@@ -554,7 +554,7 @@ void MyImGUI::Helper::LightScene2()
         }
     }
 
-    (*lightm->GetLightReference(5).GetTypePointer()) = static_cast<float>(Light::LightType::Directional);
+    (*lightm->GetLightReference(5).GetTypePointer()) = static_cast<float>(Light::LightType::Point);
 }
 
 void MyImGUI::Helper::LightScene3()
@@ -694,7 +694,7 @@ void MyImGUI::Helper::LightScene3()
         }
     }
 
-    (*lightm->GetLightReference(5).GetTypePointer()) = static_cast<float>(Light::LightType::Directional);
+    (*lightm->GetLightReference(5).GetTypePointer()) = static_cast<float>(Light::LightType::Point);
 }
 
 void MyImGUI::Helper::Normals()

@@ -22,14 +22,11 @@ layout(location = 2) in vec2 objUV;
 
 out vec3 fragPos;
 out vec3 fragNormal;
-out vec3 fragUV;
 
 void main()
 {
-	// @@ TODO: Change first pass shader, save diffuse and specular data.
 	fragPos = vec3(objToWorld * vec4(objPosition, 1.0f));
 	fragNormal = normalize(mat3(transpose(inverse(objToWorld))) * objNormal);
-	fragUV = vec3(objUV.st, 1.0);
 
 	gl_Position = worldToNDC * objToWorld * vec4(objPosition, 1.0f);
 }
