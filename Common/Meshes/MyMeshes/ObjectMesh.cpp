@@ -228,3 +228,11 @@ void ObjectMesh::Draw(int indexCount)
 	glDisableVertexAttribArray(1);
 	glDisableVertexAttribArray(2);
 }
+
+void ObjectMesh::DrawInstanced(int indexCount, int instanceCount)
+{
+	glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0, instanceCount);
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
+}

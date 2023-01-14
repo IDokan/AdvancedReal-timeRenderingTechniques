@@ -59,11 +59,16 @@ private:
 
 	void AddMembersToGUI();
 
+	// Directional Light(Global Light) Pass
 	void Draw2ndPass();
 	void DrawVertexNormals();
 	void DrawFaceNormals();
 	void DrawSpheresAndOrbit(glm::vec3 position, glm::vec3 rotateAxis, float rotateScale = 1.f, float InitRotate = 0.f, glm::vec3 diffuseColor = glm::vec3(0.f, 0.f, 0.f), glm::mat4 matrix = glm::mat4());
+	// G-buffer pass
 	void Draw1stPass();
+
+	// 3rd Pass
+	void DrawLocalLightsPass();
 
 	void SetupCamera();
 	void MoveViewOfCamera(int x, int y);
@@ -116,6 +121,8 @@ private:
 	AssimpShader* assimpHybridFirstPass;
 	GLuint hybridPhong;
 
+	GLuint hybridLocalLights;
+
 
 	float angleOfRotate;
 	glm::mat4 centralMatrix;
@@ -147,8 +154,6 @@ private:
 	Point eyePoint;
 	Point targetPoint;
 	float fov;
-	int width;
-	int height;
 	float aspect;
 	float nearDistance;
 	float farDistance;

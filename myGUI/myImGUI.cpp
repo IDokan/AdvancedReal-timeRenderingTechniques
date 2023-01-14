@@ -227,11 +227,15 @@ void MyImGUI::SetHybridDebugging(bool* ptrToGBufferRenderTargetFlag, bool* ptrTo
 
 void MyImGUI::Helper::MaterialSetup()
 {
-    ImGui::SliderFloat("material ambient", ambient, 0.f, 1.f);
+    ImGui::ColorEdit3("material ambient", ambient);
     ImGui::ColorEdit3("intensityEmissive", intensityEmissive);
 }
 void MyImGUI::Helper::LightSetup()
 {
+    ImGui::ColorEdit3("Directional Light Intensity", lightm->GetDirectionalLightIntensity());
+    ImGui::SliderFloat3("Directional Light Direction", lightm->GetDirectionalLightDirection(), -1.f, 1.f);
+    ImGui::Separator();
+
     ImGui::InputInt("input int", lightSize);
     if (*lightSize <= 0)
     {

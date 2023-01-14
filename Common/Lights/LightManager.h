@@ -26,6 +26,9 @@ public:
 	const int GetLightUniformDataSize();
 	int* GetCurrentLightSizeReference();
 	Light& GetLightReference(unsigned index);
+
+	float* GetDirectionalLightIntensity();
+	float* GetDirectionalLightDirection();
 public:
 	static constexpr int propertySize = 8;
 	static constexpr unsigned MAX_LIGHT = 16;
@@ -34,4 +37,8 @@ public:
 private:
 	std::vector<Light> lights;
 	int currentLightSize;
+
+	// Directional light information
+	glm::vec3 intensity;
+	glm::vec3 lightDirection;
 };

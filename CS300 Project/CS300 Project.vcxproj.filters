@@ -364,6 +364,12 @@
     <None Include="..\Common\542Shaders\As1HybridPhong.vert">
       <Filter>Common\542Shaders</Filter>
     </None>
+    <None Include="..\Common\542Shaders\As1LocalLightsPass.frag">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As1LocalLightsPass.vert">
+      <Filter>Common\542Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\myGUI\LICENSE.txt">

@@ -212,6 +212,8 @@ int main()
     // information for the scene
     glfwMakeContextCurrent(window);
     scene->Init();
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
 
     glfwMakeContextCurrent(guiWindow);
     scene->SetupNanoGUI(guiWindow);

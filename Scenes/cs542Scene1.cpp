@@ -63,14 +63,12 @@ Scene1::Scene1(int width, int height)
 	eyePoint = Point(0.f, 0.f, 5.f);
 	targetPoint = Point(0.f, 0.f, 0.f);
 	fov = static_cast<float>(M_PI_2);
-	width = _windowWidth;
-	height = _windowHeight;
 	aspect = static_cast<float>(width) / height;
 	nearDistance = 0.01f;
 	farDistance = 200.f;
 	relativeUp = Vector(0.f, 1.f, 0.f);
 
-	ambient = glm::vec3(0.7f);
+	ambient = glm::vec3(0.1f);
 	diffuse = glm::vec3(1.f);
 	specular = glm::vec3(0.3f);
 	ns = 1.f;
@@ -94,11 +92,11 @@ Scene1::~Scene1()
 int Scene1::Init()
 {
 #ifndef _DEBUG
-	MeshGenerator::GenerateSphereMesh(*sphereMesh, 0.05f, 16);
+	MeshGenerator::GenerateSphereMesh(*sphereMesh, 1.f, 15);
 	MeshGenerator::GenerateOrbitMesh(*orbitMesh, 1.f, 32);
 
 	myReader->ReadObjFile("../Common/Meshes/models/bunny.obj", centralMesh, false, Mesh::UVType::CUBE_MAPPED_UV);
-	myReader->ReadObjFile("../Common/Meshes/models/quad.obj", floorMesh, true, Mesh::UVType::CUBE_MAPPED_UV);
+	myReader->ReadObjFile("../Common/Meshes/models/quad.obj", floorMesh, false, Mesh::UVType::CUBE_MAPPED_UV);
 
 	model = new Model("../Common/Meshes/models/Armadillo.ply");
 #endif
@@ -139,6 +137,9 @@ void Scene1::LoadAllShaders()
 
 	hybridPhong = LoadShaders("../Common/542Shaders/As1HybridPhong.vert",
 		"../Common/542Shaders/As1HybridPhong.frag");
+
+	hybridLocalLights = LoadShaders("../Common/542Shaders/As1LocalLightsPass.vert",
+		"../Common/542Shaders/As1LocalLightsPass.frag");
 }
 
 int Scene1::preRender()
@@ -160,7 +161,7 @@ int Scene1::preRender()
 	modelMatrix = 
 		glm::rotate(180.f * displacementToPi, glm::vec3(0.f, 1.f, 0.f)) *
 		glm::scale(scaleVector) * model->CalcAdjustBoundingBoxMatrix();
-	floorMatrix = glm::translate(glm::vec3(0.f, -1.f, 0.f)) * glm::rotate(glm::half_pi<float>(), glm::vec3(1.f, 0.f, 0.f)) * glm::scale(glm::vec3(10.f, 10.f, 1.f)) * floorMesh->calcAdjustBoundingBoxMatrix();
+	floorMatrix = glm::translate(glm::vec3(0.f, -1.f, 0.f)) * glm::rotate(glm::half_pi<float>(), glm::vec3(-1.f, 0.f, 0.f)) * glm::scale(glm::vec3(10.f, 10.f, 1.f)) * floorMesh->calcAdjustBoundingBoxMatrix();
 
 	for (int i = 0; i < 4; i++)
 	{
@@ -204,6 +205,7 @@ void Scene1::CleanUp()
 	glDeleteProgram(fboCheckShader);
 	glDeleteProgram(hybridFirstPass);
 	glDeleteProgram(hybridPhong);
+	glDeleteProgram(hybridLocalLights);
 
 
 	MyImGUI::ClearImGUI();
@@ -309,23 +311,16 @@ void Scene1::Draw2ndPass()
 
 	floorObjMesh->SendUniformFloat3("cameraPosition", &c.x);
 
-	floorObjMesh->SendUniformInt("width", width);
-	floorObjMesh->SendUniformInt("height", height);
 	floorObjMesh->SendUniformFloat3("ambient", &ambient.x);
-	floorObjMesh->SendUniformFloat3("diffuse", &diffuse.x);
-	floorObjMesh->SendUniformFloat3("specular", &specular.x);
 	floorObjMesh->SendUniformFloat("ns", ns);
 	floorObjMesh->SendUniformFloat("zNear", nearDistance);
 	floorObjMesh->SendUniformFloat("zFar", farDistance);
 	floorObjMesh->SendUniformFloat3("intensityEmissive", &intensityEmissive.x);
 	floorObjMesh->SendUniformFloat3("intensityFog", &intensityFog.x);
 	floorObjMesh->SendUniformFloat3("attenuationConstants", &attenuationConstants.x);
-	floorObjMesh->SendUniformInt("lightSize", *lightManager.GetCurrentLightSizeReference());
-	
-	// uniform block data
-	// Uniform Block Update Starts Here
-	floorObjMesh->SendUniformBlockVector3s("Block", lightManager.GetLightUniformDataSize(),
-		lightManager.GetLightUniformBlockNames(), lightManager.GetLightUniformBlockData());
+
+	floorObjMesh->SendUniformFloat3("lightIntensity", lightManager.GetDirectionalLightIntensity());
+	floorObjMesh->SendUniformFloat3("lightDirection", lightManager.GetDirectionalLightDirection());
 
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 	// End here..
@@ -360,6 +355,7 @@ void Scene1::DrawFaceNormals()
 }
 void Scene1::DrawSpheresAndOrbit(glm::vec3 position, glm::vec3 rotateAxis, float rotateScale, float initRotate, glm::vec3 diffuseColor, glm::mat4 matrix)
 {
+	spheres->SetShader(programID);
 	spheres->PrepareDrawing();
 
 	sphereMatrix = matrix;
@@ -427,6 +423,43 @@ void Scene1::Draw1stPass()
 	
 
 	frameBuffer.RestoreDefaultFrameBuffer();
+}
+
+void Scene1::DrawLocalLightsPass()
+{
+
+
+
+	spheres->SetShader(hybridLocalLights);
+	spheres->PrepareDrawing();
+
+
+
+	textureManager.ActivateTexture(spheres->GetShader(), "diffuseBuffer");
+	textureManager.ActivateTexture(spheres->GetShader(), "specularBuffer");
+	textureManager.ActivateTexture(spheres->GetShader(), "positionBuffer");
+	textureManager.ActivateTexture(spheres->GetShader(), "normalBuffer");
+
+
+	Point c = camera.Eye();
+	spheres->SendUniformFloat3("cameraPosition", &c.x);
+
+	// uniform block data
+	// Uniform Block Update Starts Here
+	spheres->SendUniformBlockVector3s("Block", lightManager.GetLightUniformDataSize(),
+		lightManager.GetLightUniformBlockNames(), lightManager.GetLightUniformBlockData());
+
+	sphereMatrix = glm::mat4(1.f);
+
+	spheres->SendUniformInt("width", _windowWidth);
+	spheres->SendUniformInt("height", _windowHeight);
+	spheres->SendUniformFloat("ns", ns);
+	spheres->SendUniformFloat3("attenuationConstants", &attenuationConstants.x);
+
+	spheres->SendUniformFloatMatrix4("worldToNDC", &worldToNDC[0][0]);
+	spheres->SendUniformFloatMatrix4("objToWorld", &sphereMatrix[0][0]);
+	int lightSize = *lightManager.GetCurrentLightSizeReference();
+	spheres->DrawInstanced(sphereMesh->getIndexBufferSize(), lightSize);
 }
 
 void Scene1::SetupCamera()
@@ -622,7 +655,7 @@ void Scene1::UpdateLights()
 	for (int i = 0; i < lightSize; i++)
 	{
 		Light& light = lightManager.GetLightReference(i);
-		DrawSpheresAndOrbit(light.GetLightTranslation(), light.GetLightRotationAxis(), *light.GetLightRotationScalerReference(), *light.GetInitLightRotationReference(), *reinterpret_cast<glm::vec3*>(light.GetDiffusePointer()), light.GetMatrix());
+		// DrawSpheresAndOrbit(light.GetLightTranslation(), light.GetLightRotationAxis(), *light.GetLightRotationScalerReference(), *light.GetInitLightRotationReference(), *reinterpret_cast<glm::vec3*>(light.GetDiffusePointer()), light.GetMatrix());
 		light.UpdateLightPosition(angleOfRotate);
 		light.SetLightDirection(glm::vec3(0.f) - light.GetLightPosition());
 	}
@@ -675,7 +708,6 @@ void Scene1::RenderDeferredObjects()
 	//								The Vertex Shader will be a straight pass - through to render a Full Screen Quad (FSQ).
 	//								The Fragment Shader will implement the Phong Shading, 
 	//									but reading the input values for material / environment properties from the textures.
-
 	Draw1stPass();
 
 	
@@ -685,6 +717,14 @@ void Scene1::RenderDeferredObjects()
 	glDisable(GL_DEPTH_TEST);
 
 	Draw2ndPass();
+
+
+	glCullFace(GL_FRONT);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_ONE, GL_ONE);
+	DrawLocalLightsPass();
+	glDisable(GL_BLEND);
+	glCullFace(GL_BACK);
 
 	glEnable(GL_DEPTH_TEST);
 }

@@ -28,6 +28,7 @@ public:
 	bool SendUniformBlockVector3s(const GLchar* blockName, const GLsizei blockPropertyCount, const GLchar* const* blockPropertyNames, const glm::vec3* blockPropertyData);
 	void PrepareDrawing();
 	void Draw(int indexCount);
+	void DrawInstanced(int indexCount, int instanceCount);
 
 private:
 	GLuint normalBuffer;

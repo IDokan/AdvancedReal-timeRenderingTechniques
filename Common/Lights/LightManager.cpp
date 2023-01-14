@@ -19,6 +19,9 @@ LightManager::LightManager()
 {
 	currentLightSize = 1;
 	lights.resize(MAX_LIGHT);
+
+	intensity = glm::vec3(1.f, 230.f / 255.f, 179.f / 255.f);
+	lightDirection = glm::vec3(0.6, -1.f, -0.5f);
 }
 
 void LightManager::SetLightSize(unsigned size)
@@ -218,4 +221,14 @@ int* LightManager::GetCurrentLightSizeReference()
 Light& LightManager::GetLightReference(unsigned index)
 {
 	return lights.at(index);
+}
+
+float* LightManager::GetDirectionalLightIntensity()
+{
+	return &intensity.x;
+}
+
+float* LightManager::GetDirectionalLightDirection()
+{
+	return &lightDirection.x;
 }
