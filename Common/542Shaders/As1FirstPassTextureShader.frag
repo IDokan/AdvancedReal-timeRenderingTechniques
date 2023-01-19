@@ -15,9 +15,7 @@
 
 in vec4 fragPos;
 in vec3 fragNormal;
-
-uniform vec3 diffuse;
-uniform vec3 specular;
+in vec2 fragUV;
 
 // Writing the output data into our GBuffer
 layout (location = 0) out vec4 positionBuffer;
@@ -25,11 +23,14 @@ layout (location = 1) out vec4 normalBuffer;
 layout (location = 2) out vec4 diffuseBuffer;
 layout (location = 3) out vec4 specularBuffer;		// a value is alpha
 
+uniform sampler2D diffuseTexture;
+uniform sampler2D specularTexture;
+
 void main()
 {
 	positionBuffer = fragPos;
 	normalBuffer.xyz = normalize(fragNormal);
-	diffuseBuffer = vec4(diffuse, 1);
+	diffuseBuffer = vec4(texture(diffuseTexture, fragUV).rgb, 1);
 	
-	specularBuffer = vec4(specular, 1);
+	specularBuffer = vec4(texture(specularTexture, fragUV).rgb, 1);
 }

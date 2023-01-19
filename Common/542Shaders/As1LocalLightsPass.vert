@@ -48,7 +48,7 @@ out TheStruct lightInfo;
 
 void main()
 {
-	int range = 50;
+	int range = 10;
 	vertexPosition = objToWorld * vec4(position, 1.0f);
 	vertexPosition = vec4(data.item[gl_InstanceID].lightPosition + (vertexPosition.xyz * range), vertexPosition.w);
 	

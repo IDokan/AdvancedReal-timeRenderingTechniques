@@ -132,7 +132,7 @@ vec3 CalculateIntensityFinal(TheStruct item, vec2 uv)
 
 void main()
 {
-	int range = 50;
+	int range = 10;
 
 	// Checks if the world-position is within the range of the light.
 	vec2 uv = gl_FragCoord.xy / vec2(width, height);

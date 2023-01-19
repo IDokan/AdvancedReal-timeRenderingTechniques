@@ -28,5 +28,5 @@ namespace MyImGUI
     void SetEnvironmentReferences(float* intensityFog, float* attenuationConstants);
     void SetShaderReferences(int* currentShader, bool* reloadShader);
     void SetCentralMesh(Mesh* mesh, ObjectMesh* mainObjMesh, bool* shouldReload, char* buf, bool* flip, Mesh::UVType* uvType, bool* calculateUVonCPU);
-    void SetHybridDebugging(bool* ptrToGBufferRenderTargetFlag, bool* ptrToDepthWriteFlag);
+    void SetHybridDebugging(bool* ptrToGBufferRenderTargetFlag, bool* ptrToDepthWriteFlag, bool* ptrToisDrawDebugObjects);
 }

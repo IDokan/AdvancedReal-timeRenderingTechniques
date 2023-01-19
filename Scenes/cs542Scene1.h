@@ -87,8 +87,15 @@ private:
 	void RenderDeferredObjects();
 	void CopyDepthInfo();
 	void RenderDebugObjects();
+	bool isDrawDebugObjects = false;
 
 	void DrawGBufferRenderTargets();
+
+	void DrawEnvironmentalObjects();
+	int sphereEnvironmentalSize;
+	std::vector<glm::mat4> sphereEnvironmentalMatrix;
+	std::vector<glm::vec3> sphereDiffuseColor;
+	std::vector<glm::vec3> sphereSpecularColor;
 
 private:
 	const GLuint vertexAttribute;
@@ -118,6 +125,7 @@ private:
 	// Hybrid rendering
 	GLuint fboCheckShader;
 	GLuint hybridFirstPass;
+	GLuint hybridTextureFirstPass;
 	AssimpShader* assimpHybridFirstPass;
 	GLuint hybridPhong;
 
@@ -199,6 +207,8 @@ private:
 	MyObjReader* myReader;
 
 	FBO frameBuffer;
+
+	
 };
 
 #endif // CS542_SCENE1_H

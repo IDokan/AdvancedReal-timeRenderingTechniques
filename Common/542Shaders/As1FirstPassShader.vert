@@ -20,12 +20,12 @@ layout(location = 0) in vec3 objPosition;
 layout(location = 1) in vec3 objNormal;
 layout(location = 2) in vec2 objUV;
 
-out vec3 fragPos;
+out vec4 fragPos;
 out vec3 fragNormal;
 
 void main()
 {
-	fragPos = vec3(objToWorld * vec4(objPosition, 1.0f));
+	fragPos = (objToWorld * vec4(objPosition, 1.0f));
 	fragNormal = normalize(mat3(transpose(inverse(objToWorld))) * objNormal);
 
 	gl_Position = worldToNDC * objToWorld * vec4(objPosition, 1.0f);

@@ -24,7 +24,7 @@ out vec4 outColor;
 in vec4 vertexPosition;
 in vec2 uv;
 
-in vec3 view;
+in vec3 cPos;
 
 uniform int width;
 uniform int height;
@@ -44,7 +44,7 @@ uniform vec3 attenuationConstants;
 vec3 CalculateDirectionalLight()
 {
 	vec3 vertexNormal = normalize(texture(normalBuffer, uv).rgb);
-
+	vec3 view = normalize(cPos - texture(positionBuffer, uv).rgb);
 
 	vec3 lightVector = -lightDirection;
 	lightVector = normalize(lightVector);

@@ -1,0 +1,3 @@
+Don't use the same projection matrix on both shadow pass, and render pass.
+Shadow pass projection -> how much shadow would be projected
+Render pass projection -> How much we could see the world.

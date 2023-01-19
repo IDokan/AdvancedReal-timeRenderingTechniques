@@ -144,6 +144,7 @@ struct compareVec
 {
     bool operator() (const glm::vec3& lhs, const glm::vec3& rhs) const
     {
+        return lhs.r < rhs.r;
         float V = glm::dot( lhs, rhs );
         bool bRetCode = glm::epsilonNotEqual( V, 1.0f, FLT_EPSILON);
 

@@ -83,6 +83,8 @@ Scene1::Scene1(int width, int height)
 	currentShader = 0;
 
 	myReader = new MyObjReader();
+
+	sphereEnvironmentalSize = 10;
 }
 
 Scene1::~Scene1()
@@ -92,6 +94,7 @@ Scene1::~Scene1()
 int Scene1::Init()
 {
 #ifndef _DEBUG
+#endif
 	MeshGenerator::GenerateSphereMesh(*sphereMesh, 1.f, 15);
 	MeshGenerator::GenerateOrbitMesh(*orbitMesh, 1.f, 32);
 
@@ -99,7 +102,6 @@ int Scene1::Init()
 	myReader->ReadObjFile("../Common/Meshes/models/quad.obj", floorMesh, false, Mesh::UVType::CUBE_MAPPED_UV);
 
 	model = new Model("../Common/Meshes/models/Armadillo.ply");
-#endif
 
 	AddMembersToGUI();
 
@@ -134,6 +136,9 @@ void Scene1::LoadAllShaders()
 	hybridFirstPass = LoadShaders("../Common/542Shaders/As1FirstPassShader.vert",
 		"../Common/542Shaders/As1FirstPassShader.frag");
 	assimpHybridFirstPass = new AssimpShader(hybridFirstPass);
+
+	hybridTextureFirstPass = LoadShaders("../Common/542Shaders/As1FirstPassTextureShader.vert",
+		"../Common/542Shaders/As1FirstPassTextureShader.frag");
 
 	hybridPhong = LoadShaders("../Common/542Shaders/As1HybridPhong.vert",
 		"../Common/542Shaders/As1HybridPhong.frag");
@@ -204,6 +209,7 @@ void Scene1::CleanUp()
 	glDeleteProgram(normalDisplayProgramID);
 	glDeleteProgram(fboCheckShader);
 	glDeleteProgram(hybridFirstPass);
+	glDeleteProgram(hybridTextureFirstPass);
 	glDeleteProgram(hybridPhong);
 	glDeleteProgram(hybridLocalLights);
 
@@ -277,7 +283,41 @@ void Scene1::InitGraphics()
 	sphereOrbit->SetShader(normalDisplayProgramID);
 	sphereOrbit->Init(orbitMesh->getVertexBufferSize(), orbitMesh->getVertexBuffer());
 
+	sphereEnvironmentalMatrix.resize(sphereEnvironmentalSize);
+	sphereEnvironmentalMatrix[0] = glm::translate(glm::vec3(7.f, 0.f, 7.f)) * glm::scale(glm::vec3(1.f));
+	sphereEnvironmentalMatrix[1] = glm::translate(glm::vec3(4.f, 0.f, 3.f)) * glm::scale(glm::vec3(0.5f));
+	sphereEnvironmentalMatrix[2] = glm::translate(glm::vec3(5.f, 0.f, -0.5f)) * glm::scale(glm::vec3(2.f));
+	sphereEnvironmentalMatrix[3] = glm::translate(glm::vec3(-3.2f, 0.f, 0.f)) * glm::scale(glm::vec3(0.25f));
+	sphereEnvironmentalMatrix[4] = glm::translate(glm::vec3(1.f, 0.f, 5.5f)) * glm::scale(glm::vec3(1.6f));
+	sphereEnvironmentalMatrix[5] = glm::translate(glm::vec3(-4.5f, 0.f, -4.8f)) * glm::scale(glm::vec3(1.f));
+	sphereEnvironmentalMatrix[6] = glm::translate(glm::vec3(-2.f, 0.f, 2.5f)) * glm::scale(glm::vec3(0.85f));
+	sphereEnvironmentalMatrix[7] = glm::translate(glm::vec3(-6.f, 0.f, -8.5f)) * glm::scale(glm::vec3(1.2f));
+	sphereEnvironmentalMatrix[8] = glm::translate(glm::vec3(6.f, 0.f, -7.f)) * glm::scale(glm::vec3(2.f));
+	sphereEnvironmentalMatrix[9] = glm::translate(glm::vec3(2.f, 0.f, -2.f)) * glm::scale(glm::vec3(0.9f));
 
+	sphereDiffuseColor.resize(sphereEnvironmentalSize);
+	sphereDiffuseColor[0] = glm::vec3(1.f, 0.f, 0.f);
+	sphereDiffuseColor[1] = glm::vec3(0.f, 1.f, 0.f);
+	sphereDiffuseColor[2] = glm::vec3(0.f, 0.f, 1.f);
+	sphereDiffuseColor[3] = glm::vec3(0.7f, 0.f, 0.f);
+	sphereDiffuseColor[4] = glm::vec3(0.5f, 0.8f, 0.25f);
+	sphereDiffuseColor[5] = glm::vec3(0.f, 0.f, 0.7f);
+	sphereDiffuseColor[6] = glm::vec3(1.f, 0.6f, 0.f);
+	sphereDiffuseColor[7] = glm::vec3(0.f, 1.f, 0.6f);
+	sphereDiffuseColor[8] = glm::vec3(0.6f, 0.f, 1.f);
+	sphereDiffuseColor[9] = glm::vec3(0.1f, 0.1f, 0.1f);
+
+	sphereSpecularColor.resize(sphereEnvironmentalSize);
+	sphereSpecularColor[0] = glm::vec3(0.f, 0.f, 0.f);
+	sphereSpecularColor[1] = glm::vec3(0.f, 0.f, 0.f);
+	sphereSpecularColor[2] = glm::vec3(0.f, 0.f, 0.f);
+	sphereSpecularColor[3] = glm::vec3(0.3f, 0.f, 0.f);
+	sphereSpecularColor[4] = glm::vec3(0.1f, 0.3f, 0.1f);
+	sphereSpecularColor[5] = glm::vec3(0.f, 0.f, 0.3f);
+	sphereSpecularColor[6] = glm::vec3(0.2f, 0.1f, 0.f);
+	sphereSpecularColor[7] = glm::vec3(0.f, 0.2f, 0.1f);
+	sphereSpecularColor[8] = glm::vec3(0.1f, 0.f, 0.2f);
+	sphereSpecularColor[9] = glm::vec3(1.f, 1.f, 0.f);
 }
 
 void Scene1::AddMembersToGUI()
@@ -288,7 +328,7 @@ void Scene1::AddMembersToGUI()
 	MyImGUI::SetEnvironmentReferences(reinterpret_cast<float*>(&intensityFog), reinterpret_cast<float*>(&attenuationConstants));
 	MyImGUI::SetShaderReferences(&currentShader, &reloadShader);
 	MyImGUI::SetCentralMesh(centralMesh, mainObjMesh, &shouldReload, buf, &flip, &uvImportType, &calculateUVonCPU);
-	MyImGUI::SetHybridDebugging(&gbufferRenderTargetFlag, &depthWriteFlag);
+	MyImGUI::SetHybridDebugging(&gbufferRenderTargetFlag, &depthWriteFlag, &isDrawDebugObjects);
 }
 void Scene1::Draw2ndPass()
 {
@@ -358,7 +398,7 @@ void Scene1::DrawSpheresAndOrbit(glm::vec3 position, glm::vec3 rotateAxis, float
 	spheres->SetShader(programID);
 	spheres->PrepareDrawing();
 
-	sphereMatrix = matrix;
+	sphereMatrix = matrix * glm::scale(glm::vec3(0.1f));
 	glm::vec3 orbitFaceNormal = glm::vec3(0.f, 1.f, 0.f);
 	glm::vec3 orbitRotateAxis = glm::cross(orbitFaceNormal, rotateAxis);
 	float orbitAngle = acos(glm::dot(orbitFaceNormal, rotateAxis) / (glm::length(orbitFaceNormal) * glm::length(rotateAxis)));
@@ -399,15 +439,13 @@ void Scene1::Draw1stPass()
 
 	//mainObjMesh->Draw(centralMesh->getIndexBufferSize());
 
-	floorObjMesh->SetShader(hybridFirstPass);
+	floorObjMesh->SetShader(hybridTextureFirstPass);
 	floorObjMesh->PrepareDrawing();
 
 	floorObjMesh->SendUniformFloatMatrix4("objToWorld", &floorMatrix[0][0]);
 	floorObjMesh->SendUniformFloatMatrix4("worldToNDC", &worldToNDC[0][0]);
-	glm::vec3 floorDiffuse(1.f, 1.f, 1.f);
-	glm::vec3 floorSpecular(0.3f, 0.3f, 0.3f);
-	floorObjMesh->SendUniformFloat3("diffuse", &floorDiffuse[0]);
-	floorObjMesh->SendUniformFloat3("specular", &floorSpecular[0]);
+	textureManager.ActivateTexture(hybridTextureFirstPass, "diffuseTexture");
+	textureManager.ActivateTexture(hybridTextureFirstPass, "specularTexture");
 
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
@@ -420,6 +458,7 @@ void Scene1::Draw1stPass()
 	assimpHybridFirstPass->SendUniformFloat3("specular", &specular[0]);
 	model->Draw(hybridFirstPass);
 
+	DrawEnvironmentalObjects();
 	
 
 	frameBuffer.RestoreDefaultFrameBuffer();
@@ -600,7 +639,7 @@ void Scene1::UpdateGUIShader()
 
 void Scene1::InitLights()
 {
-	static const glm::vec3 initTranslations[16] = {
+	static const glm::vec3 initTranslations[LightManager::MAX_LIGHT] = {
 		glm::vec3(3.f, 0.f, 0.f),
 		glm::vec3(0.f, 0.f, 3.f),
 		glm::vec3(0.f, 3.f, 0.f),
@@ -618,8 +657,45 @@ void Scene1::InitLights()
 		glm::vec3(0.f, 0.f, -3.f),
 		glm::vec3(-3.f / sqrt(2.f), -3.f / sqrt(2.f), 0.f),
 		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
+		glm::vec3(0.f, 3.f, 0.f),
 	};
-	static const glm::vec3 initRotationAxis[16] = {
+	static const glm::vec3 initRotationAxis[LightManager::MAX_LIGHT] = {
 		glm::vec3(0.f, 0.f, 1.f),
 		glm::vec3(0.f, 1.f, 0.f),
 		glm::vec3(1.f, 0.f, 0.f),
@@ -636,6 +712,43 @@ void Scene1::InitLights()
 		glm::vec3(0.f, 1.f, -1.f),
 		glm::vec3(1.f, 1.f, 0.f),
 		glm::vec3(1.f, -1.f, 0.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
+		glm::vec3(1.f, 0.f, 1.f),
 		glm::vec3(1.f, 0.f, 1.f),
 
 	};
@@ -655,7 +768,22 @@ void Scene1::UpdateLights()
 	for (int i = 0; i < lightSize; i++)
 	{
 		Light& light = lightManager.GetLightReference(i);
-		// DrawSpheresAndOrbit(light.GetLightTranslation(), light.GetLightRotationAxis(), *light.GetLightRotationScalerReference(), *light.GetInitLightRotationReference(), *reinterpret_cast<glm::vec3*>(light.GetDiffusePointer()), light.GetMatrix());
+		if (i >= 16)
+		{
+			spheres->SetShader(programID);
+			spheres->PrepareDrawing();
+
+			sphereMatrix = glm::translate(light.GetLightPosition()) * glm::scale(glm::vec3(0.1f));
+			spheres->SendUniformFloatMatrix4("worldToNDC", &worldToNDC[0][0]);
+			spheres->SendUniformFloatMatrix4("objToWorld", &sphereMatrix[0][0]);
+			spheres->SendUniformFloat3("diffuseColor", light.GetDiffusePointer());
+			spheres->Draw(sphereMesh->getIndexBufferSize());
+
+		}
+		else
+		{
+			DrawSpheresAndOrbit(light.GetLightTranslation(), light.GetLightRotationAxis(), *light.GetLightRotationScalerReference(), *light.GetInitLightRotationReference(), *reinterpret_cast<glm::vec3*>(light.GetDiffusePointer()), light.GetMatrix());
+		}
 		light.UpdateLightPosition(angleOfRotate);
 		light.SetLightDirection(glm::vec3(0.f) - light.GetLightPosition());
 	}
@@ -743,8 +871,11 @@ void Scene1::RenderDebugObjects()
 	//		Essentially, your code to render these objects should be unchanged from CS300.
 	// b. Do not apply Phong Shading to debug draw objects.
 	// c. In future assignments, we will expand our repertoire of "debug" objects to include bounding volumes, trees, and rays.
+	if (isDrawDebugObjects == true)
+	{
+		UpdateLights();
+	}
 
-	UpdateLights();
 
 	if (vertexNormalFlag == true)
 	{
@@ -786,4 +917,19 @@ void Scene1::DrawGBufferRenderTargets()
 	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[3][0][0]);
 	textureManager.ActivateTexture(fboCheckShader, "specularBuffer", "tex");
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
+}
+
+void Scene1::DrawEnvironmentalObjects()
+{
+	spheres->SetShader(hybridFirstPass);
+
+	for (size_t i = 0; i < sphereEnvironmentalSize; i++)
+	{
+		spheres->PrepareDrawing();
+		spheres->SendUniformFloatMatrix4("worldToNDC", &worldToNDC[0][0]);
+		spheres->SendUniformFloatMatrix4("objToWorld", &sphereEnvironmentalMatrix[i][0][0]);
+		spheres->SendUniformFloat3("diffuse", &sphereDiffuseColor[i][0]);
+		spheres->SendUniformFloat3("specular", &sphereSpecularColor[i][0]);
+		spheres->Draw(sphereMesh->getIndexBufferSize());
+	}
 }

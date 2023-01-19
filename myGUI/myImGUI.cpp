@@ -60,6 +60,7 @@ namespace MyImGUI {
 
     bool* gBufferRenderTargetFlag;
     bool* depthWriteFlag;
+    bool* isDrawDebugObjects;
 
     namespace Helper
     {
@@ -219,10 +220,11 @@ void MyImGUI::SetCentralMesh(Mesh* mesh, ObjectMesh* _mainObjMesh, bool* _should
     calculateUVonCPU = _calculateUVonCPU;
 }
 
-void MyImGUI::SetHybridDebugging(bool* ptrToGBufferRenderTargetFlag, bool* ptrToDepthWriteFlag)
+void MyImGUI::SetHybridDebugging(bool* ptrToGBufferRenderTargetFlag, bool* ptrToDepthWriteFlag, bool* ptrToisDrawDebugObjects)
 {
     gBufferRenderTargetFlag = ptrToGBufferRenderTargetFlag;
     depthWriteFlag = ptrToDepthWriteFlag;
+    isDrawDebugObjects = ptrToisDrawDebugObjects;
 }
 
 void MyImGUI::Helper::MaterialSetup()
@@ -316,6 +318,7 @@ void MyImGUI::Helper::LightRepresenter(std::string identifier, int index)
     {
         lightm->GetLightReference(index).SetShouldStopLight(stopLight);
     }
+
     ImGui::SliderFloat3(std::string(std::string("Light Position") + identifier).c_str(), reinterpret_cast<float*>(lightProperties[index * LightManager::propertySize + 0]), -10.f, 10.f);
     ImGui::SliderFloat(std::string(std::string("Light Speed ") + identifier).c_str(), lightm->GetLightReference(index).GetLightRotationScalerReference(), 0.f, 6.28f);
     ImGui::SliderFloat(std::string(std::string("Starting Light Point") + identifier).c_str(), lightm->GetLightReference(index).GetInitLightRotationReference(), 0.f, 6.28f);
@@ -408,6 +411,10 @@ void MyImGUI::Helper::HybridRenders()
     {
         ImGui::Checkbox("Show render targets in G-Buffer", gBufferRenderTargetFlag);
         ImGui::Checkbox("Copy depth information", depthWriteFlag);
+        if (isDrawDebugObjects != nullptr)
+        {
+            ImGui::Checkbox("Draw Debug Objects", isDrawDebugObjects);
+        }
     }
 }
 
@@ -450,6 +457,42 @@ void MyImGUI::Helper::LightScene1()
         glm::vec3(0.f, 0.f, -3.f),
         glm::vec3(-3.f / sqrt(2.f), -3.f / sqrt(2.f), 0.f),
         glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+
+
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
     };
     static const glm::vec3 scene1RotationAxis[LightManager::MAX_LIGHT] = {
         glm::vec3(0.f, 0.f, 1.f),
@@ -468,6 +511,43 @@ void MyImGUI::Helper::LightScene1()
         glm::vec3(0.f, 1.f, -1.f),
         glm::vec3(1.f, 1.f, 0.f),
         glm::vec3(1.f, -1.f, 0.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
         glm::vec3(1.f, 0.f, 1.f),
     };
     lightm->SetLightSize(LightManager::MAX_LIGHT);
@@ -506,6 +586,43 @@ void MyImGUI::Helper::LightScene2()
         glm::vec3(0.f, 0.f, -3.f),
         glm::vec3(-3.f / sqrt(2.f), -3.f / sqrt(2.f), 0.f),
         glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
     };
     static const glm::vec3 scene2RotationAxis[LightManager::MAX_LIGHT] = {
         glm::vec3(0.f, 0.f, 1.f),
@@ -524,6 +641,43 @@ void MyImGUI::Helper::LightScene2()
         glm::vec3(0.f, 1.f, -1.f),
         glm::vec3(1.f, 1.f, 0.f),
         glm::vec3(1.f, -1.f, 0.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
         glm::vec3(1.f, 0.f, 1.f),
     };
     lightm->SetLightSize(LightManager::MAX_LIGHT);
@@ -582,6 +736,43 @@ void MyImGUI::Helper::LightScene3()
         glm::vec3(0.f, 0.f, -3.f),
         glm::vec3(-3.f / sqrt(2.f), -3.f / sqrt(2.f), 0.f),
         glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
+        glm::vec3(0.f, 3.f, 0.f),
     };
     static glm::vec3 scene3RotationAxis[LightManager::MAX_LIGHT] = {
         glm::vec3(0.f, 0.f, 1.f),
@@ -601,6 +792,43 @@ void MyImGUI::Helper::LightScene3()
         glm::vec3(1.f, 1.f, 0.f),
         glm::vec3(1.f, -1.f, 0.f),
         glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
+        glm::vec3(1.f, 0.f, 1.f),
     };
     static glm::vec3 scene3Ambients[LightManager::MAX_LIGHT] = {
         glm::vec3(41, 44, 8),
@@ -618,6 +846,43 @@ void MyImGUI::Helper::LightScene3()
         glm::vec3(0, 135, 255),
         glm::vec3(225, 0, 255),
         glm::vec3(59, 0, 59),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
+        glm::vec3(26, 35, 95),
         glm::vec3(26, 35, 95),
     };
     static glm::vec3 scene3Diffuse[LightManager::MAX_LIGHT] = {
@@ -637,6 +902,43 @@ void MyImGUI::Helper::LightScene3()
         glm::vec3(89, 20, 255),
         glm::vec3(54, 0, 61),
         glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
+        glm::vec3(49, 16, 93),
     };
     static glm::vec3 scene3Specular[LightManager::MAX_LIGHT] = {
         glm::vec3(43, 44, 10),
@@ -654,6 +956,41 @@ void MyImGUI::Helper::LightScene3()
         glm::vec3(0, 255, 75),
         glm::vec3(180, 0, 255),
         glm::vec3(49, 0, 46),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
+        glm::vec3(84, 12, 95),
         glm::vec3(84, 12, 95),
     };
     if (scene3Ambients[0].x > 3.f)

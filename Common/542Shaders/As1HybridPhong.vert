@@ -24,6 +24,8 @@ uniform vec3 cameraPosition;
 out vec4 vertexPosition;
 out vec2 uv;
 
+out vec3 cPos;
+
 out vec3 view;
 
 void main()
@@ -32,8 +34,7 @@ void main()
 	uv = vUV;
 
 	
-	view = cameraPosition - vec3(vertexPosition.xyz);
-	view = normalize(view);
+	cPos = cameraPosition;
 
 	gl_Position = vertexPosition;
 }

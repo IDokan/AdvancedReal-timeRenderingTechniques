@@ -245,6 +245,8 @@ xcopy /y /d "..\ThirdParty\assimp\lib\*.dll" "$(TargetDir)"</Command>
   <ItemGroup>
     <None Include="..\Common\542Shaders\As1FirstPassShader.frag" />
     <None Include="..\Common\542Shaders\As1FirstPassShader.vert" />
+    <None Include="..\Common\542Shaders\As1FirstPassTextureShader.frag" />
+    <None Include="..\Common\542Shaders\As1FirstPassTextureShader.vert" />
     <None Include="..\Common\542Shaders\As1HybridPhong.frag" />
     <None Include="..\Common\542Shaders\As1HybridPhong.vert" />
     <None Include="..\Common\542Shaders\As1LocalLightsPass.frag" />

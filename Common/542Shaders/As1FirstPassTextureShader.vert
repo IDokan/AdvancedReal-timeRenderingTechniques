@@ -13,23 +13,23 @@
 
 #version 430 core
 
-in vec4 fragPos;
-in vec3 fragNormal;
+uniform mat4 objToWorld;
+uniform mat4 worldToNDC;
 
-uniform vec3 diffuse;
-uniform vec3 specular;
+layout(location = 0) in vec3 objPosition;
+layout(location = 1) in vec3 objNormal;
+layout(location = 2) in vec2 objUV;
 
-// Writing the output data into our GBuffer
-layout (location = 0) out vec4 positionBuffer;
-layout (location = 1) out vec4 normalBuffer;
-layout (location = 2) out vec4 diffuseBuffer;
-layout (location = 3) out vec4 specularBuffer;		// a value is alpha
+out vec4 fragPos;
+out vec3 fragNormal;
+out vec2 fragUV;
 
 void main()
 {
-	positionBuffer = fragPos;
-	normalBuffer.xyz = normalize(fragNormal);
-	diffuseBuffer = vec4(diffuse, 1);
-	
-	specularBuffer = vec4(specular, 1);
+	fragPos = objToWorld * vec4(objPosition, 1.0f);
+	fragNormal = normalize(mat3(transpose(inverse(objToWorld))) * objNormal);
+
+	gl_Position = worldToNDC * objToWorld * vec4(objPosition, 1.0f);
+
+	fragUV = objUV;
 }
