@@ -54,7 +54,7 @@ Scene1::Scene1(int width, int height)
 	sphereOrbit = new LineMesh();
 	floorObjMesh = new ObjectMesh();
 
- 	sphericalViewPoint = Point(1.f, 0.f, 3.14f);
+	sphericalViewPoint = Point(1.f, 0.f, 3.14f);
 	cartesianViewVector = Vector(0.f, 0.f, -1.f);
 	cartesianRightVector = Vector(1.f);
 	cartesianUpVector = Vector(0.f, 1.f, 0.f);
@@ -114,7 +114,10 @@ int Scene1::Init()
 	SetupCamera();
 
 	std::vector<std::string> textureNames{ "positionBuffer" , "normalBuffer" , "diffuseBuffer", "specularBuffer" };
+
 	frameBuffer.InitializeCustomBuffer(&textureManager, textureNames);
+
+	shadowFB.Initialize(&textureManager, "shadowBuffer", 1024, 1024);
 
 	return Scene::Init();
 }
@@ -145,6 +148,10 @@ void Scene1::LoadAllShaders()
 
 	hybridLocalLights = LoadShaders("../Common/542Shaders/As1LocalLightsPass.vert",
 		"../Common/542Shaders/As1LocalLightsPass.frag");
+
+	shadowPass = LoadShaders("../Common/542Shaders/As2ShadowPass.vert",
+		"../Common/542Shaders/As2ShadowPass.frag");
+	assimpShadowPass = new AssimpShader(shadowPass);
 }
 
 int Scene1::preRender()
@@ -163,14 +170,14 @@ int Scene1::preRender()
 	centralMatrix = glm::rotate(handlerDisplacement.x * displacementToPi, glm::vec3(0.f, 1.f, 0.f)) *
 		glm::rotate(handlerDisplacement.y * displacementToPi, glm::vec3(1.f, 0.f, 0.f)) *
 		glm::scale(scaleVector) * centralMesh->calcAdjustBoundingBoxMatrix();
-	modelMatrix = 
+	modelMatrix =
 		glm::rotate(180.f * displacementToPi, glm::vec3(0.f, 1.f, 0.f)) *
 		glm::scale(scaleVector) * model->CalcAdjustBoundingBoxMatrix();
 	floorMatrix = glm::translate(glm::vec3(0.f, -1.f, 0.f)) * glm::rotate(glm::half_pi<float>(), glm::vec3(-1.f, 0.f, 0.f)) * glm::scale(glm::vec3(10.f, 10.f, 1.f)) * floorMesh->calcAdjustBoundingBoxMatrix();
 
 	for (int i = 0; i < 4; i++)
 	{
-		gbufferRenderTargetsMatrix[i] = glm::translate(glm::vec3(-1.f + (0.5f*i), -1.f, 0.f)) * glm::scale(glm::vec3(0.5f));
+		gbufferRenderTargetsMatrix[i] = glm::translate(glm::vec3(-1.f + (0.5f * i), -1.f, 0.f)) * glm::scale(glm::vec3(0.5f));
 	}
 
 	UpdateCamera();
@@ -184,6 +191,17 @@ int Scene1::preRender()
 		}
 	}
 	worldToNDC = glm::transpose(worldToNDC);
+
+	Matrix light = CameraToNDC(lightCamera) * WorldToCamera(lightCamera);
+
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = 0; j < 4; j++)
+		{
+			lightViewProjectionMatrix[i][j] = light[i][j];
+		}
+	}
+	lightViewProjectionMatrix = glm::transpose(lightViewProjectionMatrix);
 
 	return 0;
 }
@@ -212,6 +230,7 @@ void Scene1::CleanUp()
 	glDeleteProgram(hybridTextureFirstPass);
 	glDeleteProgram(hybridPhong);
 	glDeleteProgram(hybridLocalLights);
+	glDeleteProgram(shadowPass);
 
 
 	MyImGUI::ClearImGUI();
@@ -231,6 +250,7 @@ void Scene1::CleanUp()
 	delete myReader;
 
 	delete assimpHybridFirstPass;
+	delete assimpShadowPass;
 }
 
 void Scene1::SetupNanoGUI(GLFWwindow* window)
@@ -334,8 +354,8 @@ void Scene1::Draw2ndPass()
 {
 	UpdateLights();
 
-	 
-	 
+
+
 	floorObjMesh->SetShader(hybridPhong);
 	floorObjMesh->PrepareDrawing();
 
@@ -343,10 +363,13 @@ void Scene1::Draw2ndPass()
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "specularBuffer");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "positionBuffer");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "normalBuffer");
+	textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowBuffer");
 
 	glm::mat4 diffuseObjToWorld = glm::translate(glm::vec3(-1.f, -1.f, 0.f)) * glm::scale(glm::vec3(2.f));
 	floorObjMesh->SendUniformFloatMatrix4("objToWorld", &diffuseObjToWorld[0][0]);
-	
+	glm::mat4 shadowMatrix = glm::translate(glm::vec3(1.f / 2.f)) * glm::scale(glm::vec3(1.f / 2.f)) * lightViewProjectionMatrix;
+	floorObjMesh->SendUniformFloatMatrix4("objToShadow", &shadowMatrix[0][0]);
+
 	Point c = camera.Eye();
 
 	floorObjMesh->SendUniformFloat3("cameraPosition", &c.x);
@@ -459,7 +482,7 @@ void Scene1::Draw1stPass()
 	model->Draw(hybridFirstPass);
 
 	DrawEnvironmentalObjects();
-	
+
 
 	frameBuffer.RestoreDefaultFrameBuffer();
 }
@@ -478,6 +501,7 @@ void Scene1::DrawLocalLightsPass()
 	textureManager.ActivateTexture(spheres->GetShader(), "specularBuffer");
 	textureManager.ActivateTexture(spheres->GetShader(), "positionBuffer");
 	textureManager.ActivateTexture(spheres->GetShader(), "normalBuffer");
+	textureManager.ActivateTexture(spheres->GetShader(), "shadowBuffer");
 
 
 	Point c = camera.Eye();
@@ -504,6 +528,12 @@ void Scene1::DrawLocalLightsPass()
 void Scene1::SetupCamera()
 {
 	camera = Camera(eyePoint, targetPoint - eyePoint, relativeUp, fov, aspect, nearDistance, farDistance);
+	glm::vec3* lightDirection = reinterpret_cast<glm::vec3*>(lightManager.GetDirectionalLightDirection());
+	Point lightEye(-lightDirection->x * 25, -lightDirection->y * 25, -lightDirection->z * 25);
+	Point fixedEye(0.f, 100.f, 0.f);
+	Vector lightCameraDirection(lightDirection->x, lightDirection->y, lightDirection->z);
+	lightCamera = Camera(lightEye, lightCameraDirection, relativeUp, fov, 1.f, nearDistance, farDistance);
+
 }
 
 void Scene1::MoveViewOfCamera(int x, int y)
@@ -794,7 +824,7 @@ void Scene1::ReloadShader()
 	if (reloadShader)
 	{
 		reloadShader = false;
-		
+
 		LoadAllShaders();
 	}
 }
@@ -836,9 +866,12 @@ void Scene1::RenderDeferredObjects()
 	//								The Vertex Shader will be a straight pass - through to render a Full Screen Quad (FSQ).
 	//								The Fragment Shader will implement the Phong Shading, 
 	//									but reading the input values for material / environment properties from the textures.
+
+	glCullFace(GL_FRONT);
+	DrawShadowPass();
+	glCullFace(GL_BACK);
 	Draw1stPass();
 
-	
 
 
 	// disable depthwriting for temporarily
@@ -904,7 +937,7 @@ void Scene1::DrawGBufferRenderTargets()
 
 	floorObjMesh->PrepareDrawing();
 	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[1][0][0]);
-	textureManager.ActivateTexture(fboCheckShader, "normalBuffer", "tex");
+	textureManager.ActivateTexture(fboCheckShader, "shadowBuffer", "tex");
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
 
@@ -926,10 +959,43 @@ void Scene1::DrawEnvironmentalObjects()
 	for (size_t i = 0; i < sphereEnvironmentalSize; i++)
 	{
 		spheres->PrepareDrawing();
+		spheres->SendUniformFloatMatrix4("lightViewProjectionMatrix", &lightViewProjectionMatrix[0][0]);
 		spheres->SendUniformFloatMatrix4("worldToNDC", &worldToNDC[0][0]);
 		spheres->SendUniformFloatMatrix4("objToWorld", &sphereEnvironmentalMatrix[i][0][0]);
 		spheres->SendUniformFloat3("diffuse", &sphereDiffuseColor[i][0]);
 		spheres->SendUniformFloat3("specular", &sphereSpecularColor[i][0]);
 		spheres->Draw(sphereMesh->getIndexBufferSize());
 	}
+}
+
+void Scene1::DrawShadowPass()
+{
+	shadowFB.ApplyFBO();
+
+
+	glm::mat4 localFloorMatrix = glm::translate(glm::vec3(0.f, -1.f, 0.f)) * glm::rotate(glm::half_pi<float>(), glm::vec3(1.f, 0.f, 0.f)) * glm::scale(glm::vec3(10.f, 10.f, 1.f)) * floorMesh->calcAdjustBoundingBoxMatrix();
+	floorObjMesh->SetShader(shadowPass);
+	floorObjMesh->PrepareDrawing();
+	floorObjMesh->SendUniformFloatMatrix4("objToWorld", &localFloorMatrix[0][0]);
+	floorObjMesh->SendUniformFloatMatrix4("worldToNDC", &lightViewProjectionMatrix[0][0]);
+	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
+
+
+	assimpShadowPass->Use();
+	assimpShadowPass->SendUniformFloatMatrix4("objToWorld", &modelMatrix[0][0]);
+	assimpShadowPass->SendUniformFloatMatrix4("worldToNDC", &lightViewProjectionMatrix[0][0]);
+	model->Draw(*assimpShadowPass);
+
+	spheres->SetShader(shadowPass);
+
+	for (size_t i = 0; i < sphereEnvironmentalSize; i++)
+	{
+		spheres->PrepareDrawing();
+		spheres->SendUniformFloatMatrix4("worldToNDC", &lightViewProjectionMatrix[0][0]);
+		spheres->SendUniformFloatMatrix4("objToWorld", &sphereEnvironmentalMatrix[i][0][0]);
+		spheres->Draw(sphereMesh->getIndexBufferSize());
+	}
+
+
+	shadowFB.RestoreDefaultFrameBuffer();
 }

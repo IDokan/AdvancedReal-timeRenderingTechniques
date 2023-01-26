@@ -25,8 +25,10 @@ public:
 
 
 	void Initialize(TextureManager* tManager, std::string firstTextureName, glm::vec3 color = glm::vec3(0.f));
+	void Initialize(TextureManager* tManager, std::string firstTextureName, int width, int height);
 	// textureNames sequence should be match with shader layout
 	void InitializeCustomBuffer(TextureManager* tManager, std::vector<std::string> textureNames);
+	void InitializeCustomBuffer(TextureManager* tManager, std::vector<std::string> textureNames, std::vector<std::pair<int, int>> textureResolution);
 	void AddTexture(std::string newTextureName);
 	void ApplyFBO();
 	void BindTexture(std::string textureName);
@@ -40,8 +42,8 @@ public:
 	void CopyDepthInfo();
 
 private:
-	static constexpr int windowWidth = 1024;
-	static constexpr int windowHeight = 768;
+	int windowWidth;
+	int windowHeight;
 private:
 	GLuint frameBufferHandle;
 	GLuint depthRenderBuffer;

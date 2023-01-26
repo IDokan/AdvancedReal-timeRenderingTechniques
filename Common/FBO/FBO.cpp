@@ -17,7 +17,7 @@ End Header --------------------------------------------------------*/
 
 
 FBO::FBO()
-	: frameBufferHandle(0), depthRenderBuffer(0), clearColor(glm::vec3(0.0f)), textureManager(nullptr), customBufferMode(false)
+	: windowWidth(1024), windowHeight(768), frameBufferHandle(0), depthRenderBuffer(0), clearColor(glm::vec3(0.0f)), textureManager(nullptr), customBufferMode(false)
 {
 }
 
@@ -58,6 +58,44 @@ void FBO::Initialize(TextureManager* tManager, std::string firstTextureName, glm
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+void FBO::Initialize(TextureManager* tManager, std::string firstTextureName, int width, int height)
+{
+	windowWidth = width;
+	windowHeight = height;
+
+	textureManager = tManager;
+
+	if (textureManager == nullptr)
+	{
+		std::cout << "Please pass valid textureManager" << std::endl;
+	}
+
+	// Get handle to the FB Object
+	glGenFramebuffers(1, &frameBufferHandle);
+	glBindFramebuffer(GL_FRAMEBUFFER, frameBufferHandle);
+
+	// Create a texture
+	textureManager->AddTexture(width, height, firstTextureName);
+
+	// Add Depth buffer
+	glGenRenderbuffers(1, &depthRenderBuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthRenderBuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRenderBuffer);
+
+	// Now add the "render target"
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+		textureManager->GetTextureHandle(firstTextureName), 0);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		std::cout << "Framebuffer is incomplete!" << std::endl;
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 void FBO::InitializeCustomBuffer(TextureManager* tManager, std::vector<std::string> textureNames)
 {
 	customBufferMode = true;
@@ -85,6 +123,63 @@ void FBO::InitializeCustomBuffer(TextureManager* tManager, std::vector<std::stri
 		const std::string& textureName = textureNames.at(i);
 		// Create a texture
 		textureManager->AddTexture(windowWidth, windowHeight, textureName);
+
+		// Now add the "render target"
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D,
+			textureManager->GetTextureHandle(textureName), 0);
+	}
+
+	// Add Depth buffer
+	glGenRenderbuffers(1, &depthRenderBuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthRenderBuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, windowWidth, windowHeight);
+
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRenderBuffer);
+
+	GLenum* drawBuffers = new GLenum[namesSize];
+	for (int i = 0; i < namesSize; i++)
+	{
+		drawBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
+	}
+	glDrawBuffers(static_cast<GLsizei>(namesSize), drawBuffers);
+	delete[] drawBuffers;
+
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		std::cout << "Framebuffer is incomplete!" << std::endl;
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void FBO::InitializeCustomBuffer(TextureManager* tManager, std::vector<std::string> textureNames, std::vector<std::pair<int, int>> textureResolution)
+{
+	customBufferMode = true;
+
+	textureManager = tManager;
+
+	if (textureManager == nullptr)
+	{
+		std::cout << "Please pass valid textureManager" << std::endl;
+	}
+
+	// Get handle to the FB Object
+	glGenFramebuffers(1, &frameBufferHandle);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBufferHandle);
+	glBindFramebuffer(GL_FRAMEBUFFER, frameBufferHandle);
+
+	const size_t namesSize = textureNames.size();
+	if (namesSize < 0)
+	{
+		std::cout << "Please pass valid textureNames" << std::endl;
+		return;
+	}
+	for (int i = 0; i < namesSize; i++)
+	{
+		const std::string& textureName = textureNames.at(i);
+		// Create a texture
+		textureManager->AddTexture(textureResolution[i].first, textureResolution[i].second, textureName);
 
 		// Now add the "render target"
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D,

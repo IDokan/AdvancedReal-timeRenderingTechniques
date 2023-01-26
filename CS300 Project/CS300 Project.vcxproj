@@ -251,6 +251,8 @@ xcopy /y /d "..\ThirdParty\assimp\lib\*.dll" "$(TargetDir)"</Command>
     <None Include="..\Common\542Shaders\As1HybridPhong.vert" />
     <None Include="..\Common\542Shaders\As1LocalLightsPass.frag" />
     <None Include="..\Common\542Shaders\As1LocalLightsPass.vert" />
+    <None Include="..\Common\542Shaders\As2ShadowPass.frag" />
+    <None Include="..\Common\542Shaders\As2ShadowPass.vert" />
     <None Include="..\Common\ppms\black.ppm" />
     <None Include="..\Common\ppms\grid.ppm" />
     <None Include="..\Common\ppms\metal_roof_diff_512x512.ppm" />

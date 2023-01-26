@@ -18,6 +18,7 @@ uniform sampler2D positionBuffer;
 uniform sampler2D normalBuffer;
 uniform sampler2D diffuseBuffer;
 uniform sampler2D specularBuffer;
+uniform sampler2D shadowBuffer;
 
 out vec4 outColor;
 
@@ -28,6 +29,8 @@ in vec3 cPos;
 
 uniform int width;
 uniform int height;
+
+uniform mat4 objToShadow;
 
 uniform float ambient;
 uniform float ns;
@@ -57,6 +60,25 @@ vec3 CalculateDirectionalLight()
 	lightSpecular.b = max(lightSpecular.b, 0);
 
 	vec3 intensityLocal = (lightDiffuse + lightSpecular);
+
+	// Begin Shadow algorithm
+	vec4 shadowCoord = objToShadow * texture(positionBuffer, uv);
+	vec2 shadowIndex = shadowCoord.xy / shadowCoord.w;
+	
+	if(shadowCoord.w > 0 &&
+	shadowIndex.x >= 0 && shadowIndex.x < 1.f &&
+	shadowIndex.y >= 0 && shadowIndex.y < 1.f)
+	{
+		float lightDepth = texture(shadowBuffer, shadowIndex).w;
+		float pixelDepth = shadowCoord.w;
+		
+		// If the pixel is in a shadow,
+		if(pixelDepth > lightDepth + 0.04)
+		{
+			return vec3(0);
+		}
+	}
+	// End of shadow algorithm
 
 	return intensityLocal;
 }

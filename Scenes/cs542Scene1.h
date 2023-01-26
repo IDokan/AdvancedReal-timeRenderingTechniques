@@ -208,7 +208,12 @@ private:
 
 	FBO frameBuffer;
 
-	
+	void DrawShadowPass();
+	FBO shadowFB;
+	Camera lightCamera;
+	glm::mat4 lightViewProjectionMatrix;
+	GLuint shadowPass;
+	AssimpShader* assimpShadowPass;
 };
 
 #endif // CS542_SCENE1_H

@@ -56,6 +56,8 @@ void Texture::SetupTexture(const char* path, int _textureNum, enum class Texture
 
 void Texture::SetupTexture(int width, int height, int _textureNum)
 {
+	this->width = width;
+	this->height = height;
 	textureNum = _textureNum;
 
 	glGenTextures(1, &textureHandle);
