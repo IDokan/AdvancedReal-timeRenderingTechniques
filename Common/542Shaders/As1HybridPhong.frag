@@ -30,6 +30,8 @@ in vec3 cPos;
 uniform int width;
 uniform int height;
 
+uniform float lightDepthOffset;
+
 uniform mat4 objToShadow;
 
 uniform float ambient;
@@ -73,7 +75,7 @@ vec3 CalculateDirectionalLight()
 		float pixelDepth = shadowCoord.w;
 		
 		// If the pixel is in a shadow,
-		if(pixelDepth > lightDepth + 0.04)
+		if(pixelDepth > lightDepth + lightDepthOffset)
 		{
 			return vec3(0);
 		}

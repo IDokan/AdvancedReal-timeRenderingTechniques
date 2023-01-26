@@ -35,7 +35,7 @@ Scene1::Scene1(int width, int height)
 	:Scene(width, height), vertexAttribute(0), normalAttribute(1), numOfFloatVertex(3),
 	angleOfRotate(0), vertexNormalFlag(false), faceNormalFlag(false),
 	oldX(0.f), oldY(0.f), cameraMovementOffset(0.004f), shouldReload(false), buf("../Common/Meshes/models/bunny.obj"), flip(false), uvImportType(Mesh::UVType::CUBE_MAPPED_UV),
-	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true)
+	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), lightDepthOffset(0.04)
 {
 	sphereMesh = new Mesh();
 	centralMesh = new Mesh();
@@ -349,6 +349,7 @@ void Scene1::AddMembersToGUI()
 	MyImGUI::SetShaderReferences(&currentShader, &reloadShader);
 	MyImGUI::SetCentralMesh(centralMesh, mainObjMesh, &shouldReload, buf, &flip, &uvImportType, &calculateUVonCPU);
 	MyImGUI::SetHybridDebugging(&gbufferRenderTargetFlag, &depthWriteFlag, &isDrawDebugObjects);
+	MyImGUI::SetShadowReferences(&lightDepthOffset);
 }
 void Scene1::Draw2ndPass()
 {
@@ -381,6 +382,7 @@ void Scene1::Draw2ndPass()
 	floorObjMesh->SendUniformFloat3("intensityEmissive", &intensityEmissive.x);
 	floorObjMesh->SendUniformFloat3("intensityFog", &intensityFog.x);
 	floorObjMesh->SendUniformFloat3("attenuationConstants", &attenuationConstants.x);
+	floorObjMesh->SendUniformFloat("lightDepthOffset", lightDepthOffset);
 
 	floorObjMesh->SendUniformFloat3("lightIntensity", lightManager.GetDirectionalLightIntensity());
 	floorObjMesh->SendUniformFloat3("lightDirection", lightManager.GetDirectionalLightDirection());

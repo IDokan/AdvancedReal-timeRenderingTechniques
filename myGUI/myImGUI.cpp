@@ -62,6 +62,8 @@ namespace MyImGUI {
     bool* depthWriteFlag;
     bool* isDrawDebugObjects;
 
+    float* lightDepthOffset;
+
     namespace Helper
     {
         void Normals();
@@ -90,6 +92,8 @@ namespace MyImGUI {
         void Models();
 
         void HybridRenders();
+
+        void Shadows();
 
 
         // Helper to display a little (?) mark which shows a tooltip when hovered.
@@ -149,6 +153,7 @@ void MyImGUI::UpdateImGUI()
     Helper::Lights();
     Helper::LightScenarios();
     Helper::HybridRenders();
+    Helper::Shadows();
 
     // Shader selection is not disabled
     //Helper::Shaders();
@@ -225,6 +230,11 @@ void MyImGUI::SetHybridDebugging(bool* ptrToGBufferRenderTargetFlag, bool* ptrTo
     gBufferRenderTargetFlag = ptrToGBufferRenderTargetFlag;
     depthWriteFlag = ptrToDepthWriteFlag;
     isDrawDebugObjects = ptrToisDrawDebugObjects;
+}
+
+void MyImGUI::SetShadowReferences(float* _lightDepthOffset)
+{
+    lightDepthOffset = _lightDepthOffset;
 }
 
 void MyImGUI::Helper::MaterialSetup()
@@ -415,6 +425,14 @@ void MyImGUI::Helper::HybridRenders()
         {
             ImGui::Checkbox("Draw Debug Objects", isDrawDebugObjects);
         }
+    }
+}
+
+void MyImGUI::Helper::Shadows()
+{
+    if (ImGui::CollapsingHeader("Shadow configurations"))
+    {
+        ImGui::SliderFloat("Light Depth Offset", lightDepthOffset, -0.5f, 0.5f);
     }
 }
 

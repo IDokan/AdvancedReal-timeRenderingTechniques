@@ -214,6 +214,7 @@ private:
 	glm::mat4 lightViewProjectionMatrix;
 	GLuint shadowPass;
 	AssimpShader* assimpShadowPass;
+	float lightDepthOffset;
 };
 
 #endif // CS542_SCENE1_H
