@@ -156,6 +156,9 @@
     <ClCompile Include="..\Scenes\cs542Scene1.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
+    <ClCompile Include="..\Common\Meshes\MyMeshes\ComputeShaderDispatcher.cpp">
+      <Filter>Common\Meshes\MyMeshes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\shader.hpp">
@@ -256,6 +259,9 @@
     </ClInclude>
     <ClInclude Include="..\Scenes\cs542Scene1.h">
       <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\Meshes\MyMeshes\ComputeShaderDispatcher.h">
+      <Filter>Common\Meshes\MyMeshes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
