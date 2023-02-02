@@ -388,6 +388,15 @@
     <None Include="..\Common\542Shaders\As2ShadowPass.vert">
       <Filter>Common\542Shaders</Filter>
     </None>
+    <None Include="..\Common\542Shaders\As2SATHorizontal.comp">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As2SATVertical.comp">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As2SATBlurFilter.comp">
+      <Filter>Common\542Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\myGUI\LICENSE.txt">

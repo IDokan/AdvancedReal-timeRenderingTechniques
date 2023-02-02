@@ -68,7 +68,7 @@ void Texture::SetupTexture(int width, int height, int _textureNum)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGB, GL_FLOAT, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, 0);
 }
 
 void Texture::UpdateTexture(GLuint programID, const GLchar* name)
@@ -86,6 +86,21 @@ void Texture::UpdateTexture(GLuint programID, const GLchar* name)
 	glBindTexture(GL_TEXTURE_2D, textureHandle);
 	
 	// Uniform sampler for texture unit 0
+	GLint texSamplerLoc = glGetUniformLocation(programID, name);
+	glUniform1i(texSamplerLoc, textureNum);
+}
+
+void Texture::UpdateImage(GLuint programID, const GLchar* name, GLenum access)
+{
+	if (textureNum < 0)
+	{
+		return;
+	}
+
+	glUseProgram(programID);
+
+	glBindImageTexture(textureNum, textureHandle, 0, GL_FALSE, 0, access, GL_RGBA32F);
+
 	GLint texSamplerLoc = glGetUniformLocation(programID, name);
 	glUniform1i(texSamplerLoc, textureNum);
 }

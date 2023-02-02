@@ -44,6 +44,16 @@ void TextureManager::ActivateTexture(GLuint programID, std::string textureName, 
 	textures.find(textureName)->second.UpdateTexture(programID, activateName.c_str());
 }
 
+void TextureManager::ActivateImage(GLuint programID, std::string activateName, GLenum access)
+{
+	ActivateImage(programID, activateName, activateName, access);
+}
+
+void TextureManager::ActivateImage(GLuint programID, std::string textureName, std::string activateName, GLenum access)
+{
+	textures.find(textureName)->second.UpdateImage(programID, activateName.c_str(), access);
+}
+
 GLuint TextureManager::GetTextureHandle(std::string textureName)
 {
 	return textures.find(textureName)->second.GetHandle();

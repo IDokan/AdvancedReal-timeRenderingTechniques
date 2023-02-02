@@ -18,7 +18,15 @@ in vec4 fragPos;
 // Writing the output data into our GBuffer
 layout (location = 0) out vec4 shadowBuffer;
 
+uniform float nearDepth;
+uniform float farDepth;
+
 void main()
 {
-	shadowBuffer = fragPos;
+	float normalizedDepth = (fragPos.z - nearDepth) / (farDepth - nearDepth);
+
+	shadowBuffer = vec4(normalizedDepth, 
+	normalizedDepth * normalizedDepth,
+	normalizedDepth * normalizedDepth * normalizedDepth,
+	normalizedDepth * normalizedDepth * normalizedDepth * normalizedDepth);
 }

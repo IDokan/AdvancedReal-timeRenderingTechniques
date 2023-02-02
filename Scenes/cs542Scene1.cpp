@@ -30,12 +30,13 @@ End Header --------------------------------------------------------*/
 
 #include <../Common/Meshes/models/Model.h>
 #include <../Common/shaders/AssimpShader.h>
+#include <../Common/Meshes/MyMeshes/ComputeShaderDispatcher.h>
 
 Scene1::Scene1(int width, int height)
 	:Scene(width, height), vertexAttribute(0), normalAttribute(1), numOfFloatVertex(3),
 	angleOfRotate(0), vertexNormalFlag(false), faceNormalFlag(false),
 	oldX(0.f), oldY(0.f), cameraMovementOffset(0.004f), shouldReload(false), buf("../Common/Meshes/models/bunny.obj"), flip(false), uvImportType(Mesh::UVType::CUBE_MAPPED_UV),
-	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), lightDepthOffset(0.04)
+	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), lightDepthOffset(0.04f), shadowBufferSize(1024), blurStrength(0)
 {
 	sphereMesh = new Mesh();
 	centralMesh = new Mesh();
@@ -109,6 +110,10 @@ int Scene1::Init()
 
 	InitLights();
 
+	shadowFB.Initialize(&textureManager, "shadowBuffer", shadowBufferSize, shadowBufferSize);
+	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowSAT");
+	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowBlurred");
+
 	InitGraphics();
 
 	SetupCamera();
@@ -116,8 +121,6 @@ int Scene1::Init()
 	std::vector<std::string> textureNames{ "positionBuffer" , "normalBuffer" , "diffuseBuffer", "specularBuffer" };
 
 	frameBuffer.InitializeCustomBuffer(&textureManager, textureNames);
-
-	shadowFB.Initialize(&textureManager, "shadowBuffer", 1024, 1024);
 
 	return Scene::Init();
 }
@@ -152,6 +155,10 @@ void Scene1::LoadAllShaders()
 	shadowPass = LoadShaders("../Common/542Shaders/As2ShadowPass.vert",
 		"../Common/542Shaders/As2ShadowPass.frag");
 	assimpShadowPass = new AssimpShader(shadowPass);
+
+	horizontalFilter = new ComputeShaderDispatcher("../Common/542Shaders/As2SATHorizontal.comp");
+	verticalFilter = new ComputeShaderDispatcher("../Common/542Shaders/As2SATVertical.comp");
+	blurFilterShader = new ComputeShaderDispatcher("../Common/542Shaders/As2SATBlurFilter.comp");
 }
 
 int Scene1::preRender()
@@ -237,6 +244,10 @@ void Scene1::CleanUp()
 
 	textureManager.Clear();
 	frameBuffer.Clear();
+
+	delete horizontalFilter;
+	delete verticalFilter;
+	delete blurFilterShader;
 
 	delete sphereMesh;
 	delete centralMesh;
@@ -349,7 +360,7 @@ void Scene1::AddMembersToGUI()
 	MyImGUI::SetShaderReferences(&currentShader, &reloadShader);
 	MyImGUI::SetCentralMesh(centralMesh, mainObjMesh, &shouldReload, buf, &flip, &uvImportType, &calculateUVonCPU);
 	MyImGUI::SetHybridDebugging(&gbufferRenderTargetFlag, &depthWriteFlag, &isDrawDebugObjects);
-	MyImGUI::SetShadowReferences(&lightDepthOffset);
+	MyImGUI::SetShadowReferences(&lightDepthOffset, &blurStrength);
 }
 void Scene1::Draw2ndPass()
 {
@@ -531,8 +542,7 @@ void Scene1::SetupCamera()
 {
 	camera = Camera(eyePoint, targetPoint - eyePoint, relativeUp, fov, aspect, nearDistance, farDistance);
 	glm::vec3* lightDirection = reinterpret_cast<glm::vec3*>(lightManager.GetDirectionalLightDirection());
-	Point lightEye(-lightDirection->x * 25, -lightDirection->y * 25, -lightDirection->z * 25);
-	Point fixedEye(0.f, 100.f, 0.f);
+	Point lightEye(-lightDirection->x * 18, -lightDirection->y * 18, -lightDirection->z * 18);
 	Vector lightCameraDirection(lightDirection->x, lightDirection->y, lightDirection->z);
 	lightCamera = Camera(lightEye, lightCameraDirection, relativeUp, fov, 1.f, nearDistance, farDistance);
 
@@ -872,6 +882,8 @@ void Scene1::RenderDeferredObjects()
 	glCullFace(GL_FRONT);
 	DrawShadowPass();
 	glCullFace(GL_BACK);
+	DispatchBlurFilter();
+
 	Draw1stPass();
 
 
@@ -932,25 +944,35 @@ void Scene1::DrawGBufferRenderTargets()
 {
 	floorObjMesh->SetShader(fboCheckShader);
 	floorObjMesh->PrepareDrawing();
-	textureManager.ActivateTexture(fboCheckShader, "positionBuffer", "tex");
+	textureManager.ActivateTexture(fboCheckShader, "shadowBuffer", "tex");
 	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[0][0][0]);
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
 
-	floorObjMesh->PrepareDrawing();
-	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[1][0][0]);
-	textureManager.ActivateTexture(fboCheckShader, "shadowBuffer", "tex");
-	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
+	//floorObjMesh->PrepareDrawing();
+	//floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[1][0][0]);
+	//textureManager.ActivateTexture(fboCheckShader, "positionBuffer", "tex");
+	//floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
 
-	floorObjMesh->PrepareDrawing();
-	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[2][0][0]);
-	textureManager.ActivateTexture(fboCheckShader, "diffuseBuffer", "tex");
-	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
+	//floorObjMesh->PrepareDrawing();
+	//floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[2][0][0]);
+	//textureManager.ActivateTexture(fboCheckShader, "shadowSAT", "tex");
+	//floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
+	floorObjMesh->SetShader(fboCheckShader);
 	floorObjMesh->PrepareDrawing();
-	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[3][0][0]);
-	textureManager.ActivateTexture(fboCheckShader, "specularBuffer", "tex");
+	 floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[3][0][0]);
+	 textureManager.ActivateTexture(fboCheckShader, "shadowSAT", "tex");
+	 floorObjMesh->Draw(floorMesh->getIndexBufferSize());
+
+	floorObjMesh->SetShader(fboCheckShader);
+	floorObjMesh->PrepareDrawing();
+	// floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[3][0][0]);
+	glm::mat4 tmp = glm::scale(glm::vec3(2.f, 2.f, 2.f)) * glm::translate(glm::vec3(-0.5f, -0.5f, 0.f));
+	floorObjMesh->SendUniformFloatMatrix4("trans", &tmp[0][0]);
+
+	textureManager.ActivateTexture(fboCheckShader, "shadowBlurred", "tex");
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 }
 
@@ -974,16 +996,22 @@ void Scene1::DrawShadowPass()
 {
 	shadowFB.ApplyFBO();
 
+	constexpr float nearDepth = 0.1f;
+	constexpr float farDepth = 100.f;
 
 	glm::mat4 localFloorMatrix = glm::translate(glm::vec3(0.f, -1.f, 0.f)) * glm::rotate(glm::half_pi<float>(), glm::vec3(1.f, 0.f, 0.f)) * glm::scale(glm::vec3(10.f, 10.f, 1.f)) * floorMesh->calcAdjustBoundingBoxMatrix();
 	floorObjMesh->SetShader(shadowPass);
 	floorObjMesh->PrepareDrawing();
+	floorObjMesh->SendUniformFloat("nearDepth", nearDepth);
+	floorObjMesh->SendUniformFloat("farDepth", farDepth);
 	floorObjMesh->SendUniformFloatMatrix4("objToWorld", &localFloorMatrix[0][0]);
 	floorObjMesh->SendUniformFloatMatrix4("worldToNDC", &lightViewProjectionMatrix[0][0]);
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
 
 	assimpShadowPass->Use();
+	assimpShadowPass->SendUniformFloat("nearDepth", nearDepth);
+	assimpShadowPass->SendUniformFloat("farDepth", farDepth);
 	assimpShadowPass->SendUniformFloatMatrix4("objToWorld", &modelMatrix[0][0]);
 	assimpShadowPass->SendUniformFloatMatrix4("worldToNDC", &lightViewProjectionMatrix[0][0]);
 	model->Draw(*assimpShadowPass);
@@ -993,6 +1021,8 @@ void Scene1::DrawShadowPass()
 	for (size_t i = 0; i < sphereEnvironmentalSize; i++)
 	{
 		spheres->PrepareDrawing();
+		spheres->SendUniformFloat("nearDepth", nearDepth);
+		spheres->SendUniformFloat("farDepth", farDepth);
 		spheres->SendUniformFloatMatrix4("worldToNDC", &lightViewProjectionMatrix[0][0]);
 		spheres->SendUniformFloatMatrix4("objToWorld", &sphereEnvironmentalMatrix[i][0][0]);
 		spheres->Draw(sphereMesh->getIndexBufferSize());
@@ -1000,4 +1030,57 @@ void Scene1::DrawShadowPass()
 
 
 	shadowFB.RestoreDefaultFrameBuffer();
+}
+
+void Scene1::DispatchBlurFilter()
+{
+
+	// Vertical pass
+	verticalFilter->PrepareDrawing();
+	textureManager.ActivateImage(verticalFilter->GetShader(), "shadowBuffer", "src", GL_READ_ONLY);
+	textureManager.ActivateImage(verticalFilter->GetShader(), "shadowSAT", "dst", GL_WRITE_ONLY);
+
+	int delta = 1;
+	while (delta < shadowBufferSize)
+	{
+		verticalFilter->SendUniformInt("delta", delta);
+		verticalFilter->Dispatch(shadowBufferSize / 16, shadowBufferSize / 16, 1);
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
+		glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+		delta *= 2;
+		textureManager.ActivateImage(verticalFilter->GetShader(), "shadowSAT", "src", GL_READ_ONLY);
+		textureManager.ActivateImage(verticalFilter->GetShader(), "shadowSAT", "dst", GL_WRITE_ONLY);
+	}
+
+	horizontalFilter->PrepareDrawing();
+	textureManager.ActivateImage(horizontalFilter->GetShader(), "shadowSAT", "src", GL_READ_ONLY);
+	textureManager.ActivateImage(horizontalFilter->GetShader(), "shadowSAT", "dst", GL_WRITE_ONLY);
+
+	// Horizontal pass
+	 delta = 1;
+	while (delta < shadowBufferSize)
+	{
+		horizontalFilter->SendUniformInt("delta", delta);
+		horizontalFilter->Dispatch(shadowBufferSize / 16, shadowBufferSize / 16, 1);
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
+		glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+		delta *= 2;
+		textureManager.ActivateImage(horizontalFilter->GetShader(), "shadowSAT", "src", GL_READ_ONLY);
+		textureManager.ActivateImage(horizontalFilter->GetShader(), "shadowSAT", "dst", GL_WRITE_ONLY);
+	}
+	
+
+	blurFilterShader->PrepareDrawing();
+	textureManager.ActivateImage(blurFilterShader->GetShader(), "shadowSAT", "src", GL_READ_ONLY);
+	textureManager.ActivateImage(blurFilterShader->GetShader(), "shadowBlurred", "dst", GL_WRITE_ONLY);
+	blurFilterShader->SendUniformInt("blurStrength", blurStrength);
+	blurFilterShader->Dispatch(shadowBufferSize / 16, shadowBufferSize / 16, 1);
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
+	glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }

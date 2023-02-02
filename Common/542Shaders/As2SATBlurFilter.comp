@@ -1,0 +1,33 @@
+///* Start Header -------------------------------------------------------
+//Copyright (C) Spring2023 DigiPen Institute of Technology.
+//Reproduction or disclosure of this file or its contents without the prior written
+//consent of DigiPen Institute of Technology is prohibited.
+//File Name: As2SATcompute.comp
+//Purpose: blur filter of shadow map
+//Language: GLSL
+//Platform: Windows SDK version: 10.0.19041.0, OS: Windows 10. GPU: NVIDIA GeForce840M. OpenGL Driver version: 10.18.15.4279, 8-24-2015
+//Project: sinil.kang_CS562_2
+//Author: Sinil Kang = sinil.kang = Colleague ID: 0052782
+//Creation date: 2/1/2023
+//End Header --------------------------------------------------------*/
+
+#version 430
+
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+layout(rgba32f) uniform restrict readonly image2D src;
+layout(rgba32f) uniform restrict writeonly image2D dst;
+
+uniform int blurStrength;
+
+void main() 
+{
+	ivec2 i = ivec2(gl_GlobalInvocationID.xy);
+	vec4 outv = 
+		imageLoad(src, i + ivec2(blurStrength, blurStrength)) 
+		- imageLoad(src, i + ivec2(blurStrength, -blurStrength - 1)) 
+		+ imageLoad(src, i - ivec2(blurStrength + 1, blurStrength + 1))
+		- imageLoad(src, i + ivec2(-blurStrength - 1, blurStrength)) ;
+	int numOfPixels = (2 * blurStrength + 1) * (2 * blurStrength + 1);
+	imageStore(dst, i, outv / numOfPixels);
+}

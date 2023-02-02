@@ -28,6 +28,9 @@ public:
 
 	void ActivateTexture(GLuint programID, std::string textureName, std::string ActivateName);
 
+	void ActivateImage(GLuint programID, std::string activateName, GLenum access);
+	void ActivateImage(GLuint programID, std::string textureName, std::string activateName, GLenum access);
+
 	GLuint GetTextureHandle(std::string textureName);
 	
 	void Clear();

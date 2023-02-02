@@ -137,7 +137,7 @@ GLuint LoadShaders(const char* compute_file_path)
         ComputeShaderStream.close();
     }
     else {
-        printf("Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", vertex_file_path);
+        printf("Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", compute_file_path);
         getchar();
         return 0;
     }

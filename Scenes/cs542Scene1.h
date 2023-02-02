@@ -36,6 +36,7 @@ class LineMesh;
 class ObjectMesh;
 class Model;
 class AssimpShader;
+class ComputeShaderDispatcher;
 
 class Scene1 : public Scene
 {
@@ -215,6 +216,13 @@ private:
 	GLuint shadowPass;
 	AssimpShader* assimpShadowPass;
 	float lightDepthOffset;
+
+	void DispatchBlurFilter();
+	ComputeShaderDispatcher* horizontalFilter;
+	ComputeShaderDispatcher* verticalFilter;
+	const int shadowBufferSize;
+	int blurStrength;
+	ComputeShaderDispatcher* blurFilterShader;
 };
 
 #endif // CS542_SCENE1_H

@@ -30,6 +30,7 @@ public:
 	void SetupTexture(int width, int height, int textureNum);
 
 	void UpdateTexture(GLuint programID, const GLchar* name);
+	void UpdateImage(GLuint programID, const GLchar* name, GLenum access);
 
 	GLuint GetHandle() const;
 

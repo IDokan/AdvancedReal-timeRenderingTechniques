@@ -21,11 +21,18 @@ ComputeShaderDispatcher::ComputeShaderDispatcher(const char* compute_file_path)
 
 ComputeShaderDispatcher::~ComputeShaderDispatcher()
 {
+	glDeleteProgram(shader);
 }
 
 void ComputeShaderDispatcher::PrepareDrawing()
 {
 	glUseProgram(shader);
+}
+
+void ComputeShaderDispatcher::SendUniformInt(const char* uniformName, const int uniformData)
+{
+	GLint loc = glGetUniformLocation(shader, uniformName);
+	glUniform1i(loc, uniformData);
 }
 
 bool ComputeShaderDispatcher::SendUniformBlock(const GLchar* blockName, const GLsizei blockPropertyCount, const GLchar* const* blockPropertyNames, const float** blockPropertyData)
@@ -83,7 +90,6 @@ bool ComputeShaderDispatcher::SendUniformBlock(const GLchar* blockName, const GL
 void ComputeShaderDispatcher::Dispatch(GLuint x, GLuint y, GLuint z)
 {
 	glDispatchCompute(x, y, z);
-	glUseProgram(0);
 }
 
 GLuint ComputeShaderDispatcher::GetShader()

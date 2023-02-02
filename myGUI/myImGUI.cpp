@@ -63,6 +63,7 @@ namespace MyImGUI {
     bool* isDrawDebugObjects;
 
     float* lightDepthOffset;
+    int* blurStrength;
 
     namespace Helper
     {
@@ -232,9 +233,10 @@ void MyImGUI::SetHybridDebugging(bool* ptrToGBufferRenderTargetFlag, bool* ptrTo
     isDrawDebugObjects = ptrToisDrawDebugObjects;
 }
 
-void MyImGUI::SetShadowReferences(float* _lightDepthOffset)
+void MyImGUI::SetShadowReferences(float* _lightDepthOffset, int* _blurStrength)
 {
     lightDepthOffset = _lightDepthOffset;
+    blurStrength = _blurStrength;
 }
 
 void MyImGUI::Helper::MaterialSetup()
@@ -433,6 +435,7 @@ void MyImGUI::Helper::Shadows()
     if (ImGui::CollapsingHeader("Shadow configurations"))
     {
         ImGui::SliderFloat("Light Depth Offset", lightDepthOffset, -0.5f, 0.5f);
+        ImGui::SliderInt("Blur Strength", blurStrength, 0, 5);
     }
 }
 
