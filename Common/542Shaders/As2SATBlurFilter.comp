@@ -29,5 +29,6 @@ void main()
 		+ imageLoad(src, i - ivec2(blurStrength + 1, blurStrength + 1))
 		- imageLoad(src, i + ivec2(-blurStrength - 1, blurStrength)) ;
 	int numOfPixels = (2 * blurStrength + 1) * (2 * blurStrength + 1);
+	barrier();
 	imageStore(dst, i, outv / numOfPixels);
 }

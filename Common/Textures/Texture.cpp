@@ -13,6 +13,7 @@ End Header --------------------------------------------------------*/
 
 #include <../Common/Textures/Texture.h>
 #include <../Common/ppms/ppmReader.h>
+#include <vector>
 
 Texture::Texture()
 	: width(0), height(0), pixels(nullptr), textureNum(-1), textureHandle(0)
@@ -68,7 +69,8 @@ void Texture::SetupTexture(int width, int height, int _textureNum)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, 0);
+	std::vector<float> emptyData(width * height * 4, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, emptyData.data());
 }
 
 void Texture::UpdateTexture(GLuint programID, const GLchar* name)

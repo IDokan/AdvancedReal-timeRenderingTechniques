@@ -223,6 +223,11 @@ private:
 	const int shadowBufferSize;
 	int blurStrength;
 	ComputeShaderDispatcher* blurFilterShader;
+	void ActivateAppropriateSATImage(GLuint shader);
+	bool SATToggle = true;
+
+	static constexpr float nearDepth = 0.1f;
+	static constexpr float farDepth = 100.f;
 };
 
 #endif // CS542_SCENE1_H

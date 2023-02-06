@@ -24,5 +24,6 @@ void main()
 {
 	ivec2 i = ivec2(gl_GlobalInvocationID.xy);
 	vec4 outv = imageLoad(src, i) + imageLoad(src, i + ivec2(0, delta));
+	barrier();
 	imageStore(dst, i, outv);
 }
