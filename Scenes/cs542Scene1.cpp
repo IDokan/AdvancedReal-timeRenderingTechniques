@@ -36,7 +36,7 @@ Scene1::Scene1(int width, int height)
 	:Scene(width, height), vertexAttribute(0), normalAttribute(1), numOfFloatVertex(3),
 	angleOfRotate(0), vertexNormalFlag(false), faceNormalFlag(false),
 	oldX(0.f), oldY(0.f), cameraMovementOffset(0.004f), shouldReload(false), buf("../Common/Meshes/models/bunny.obj"), flip(false), uvImportType(Mesh::UVType::CUBE_MAPPED_UV),
-	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), lightDepthOffset(0.04f), shadowBufferSize(1024), blurStrength(0)
+	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), lightDepthOffset(0.04f), shadowBufferSize(1024), blurStrength(0), bias(0.001f), showBlurred(true)
 {
 	sphereMesh = new Mesh();
 	centralMesh = new Mesh();
@@ -361,7 +361,7 @@ void Scene1::AddMembersToGUI()
 	MyImGUI::SetShaderReferences(&currentShader, &reloadShader);
 	MyImGUI::SetCentralMesh(centralMesh, mainObjMesh, &shouldReload, buf, &flip, &uvImportType, &calculateUVonCPU);
 	MyImGUI::SetHybridDebugging(&gbufferRenderTargetFlag, &depthWriteFlag, &isDrawDebugObjects);
-	MyImGUI::SetShadowReferences(&lightDepthOffset, &blurStrength);
+	MyImGUI::SetShadowReferences(&lightDepthOffset, &blurStrength, &bias, &showBlurred);
 }
 void Scene1::Draw2ndPass()
 {
@@ -376,8 +376,23 @@ void Scene1::Draw2ndPass()
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "specularBuffer");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "positionBuffer");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "normalBuffer");
-	textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowBuffer");
-	//textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowBlurred", "shadowBuffer");
+	//if (showBlurred)
+	//{
+	//	textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowBlurred", "shadowBuffer");
+	//}
+	//else
+	//{
+	//	textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowBuffer");
+	//}
+
+	if (!SATToggle)
+	{
+		textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowSATSpare", "shadowBuffer");
+	}
+	else
+	{
+		textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowSAT", "shadowBuffer");
+	}
 
 	glm::mat4 diffuseObjToWorld = glm::translate(glm::vec3(-1.f, -1.f, 0.f)) * glm::scale(glm::vec3(2.f));
 	floorObjMesh->SendUniformFloatMatrix4("objToWorld", &diffuseObjToWorld[0][0]);
@@ -402,6 +417,10 @@ void Scene1::Draw2ndPass()
 
 	floorObjMesh->SendUniformFloat("nearDepth", nearDepth);
 	floorObjMesh->SendUniformFloat("farDepth", farDepth);
+	floorObjMesh->SendUniformFloat("bias", bias);
+	floorObjMesh->SendUniformInt("blurStrength", blurStrength);
+	floorObjMesh->SendUniformInt("shadowMapSize", shadowBufferSize);
+
 
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 	// End here..
@@ -977,7 +996,14 @@ void Scene1::DrawGBufferRenderTargets()
 	glm::mat4 tmp = glm::scale(glm::vec3(2.f, 2.f, 2.f)) * glm::translate(glm::vec3(-0.5f, -0.5f, 0.f));
 	floorObjMesh->SendUniformFloatMatrix4("trans", &tmp[0][0]);
 
-	textureManager.ActivateTexture(fboCheckShader, "shadowBlurred", "tex");
+	if (!SATToggle)
+	{
+		textureManager.ActivateTexture(fboCheckShader, "shadowSATSpare", "shadowBuffer");
+	}
+	else
+	{
+		textureManager.ActivateTexture(fboCheckShader, "shadowSAT", "shadowBuffer");
+	}
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 }
 
@@ -1001,7 +1027,7 @@ void Scene1::DrawShadowPass()
 {
 	shadowFB.ApplyFBO();
 
-	glm::mat4 localFloorMatrix = glm::translate(glm::vec3(0.f, -1.f, 0.f)) * glm::rotate(glm::half_pi<float>(), glm::vec3(1.f, 0.f, 0.f)) * glm::scale(glm::vec3(10.f, 10.f, 1.f)) * floorMesh->calcAdjustBoundingBoxMatrix();
+	glm::mat4 localFloorMatrix = glm::translate(glm::vec3(0.f, -1.f, 0.f)) * glm::rotate(glm::half_pi<float>(), glm::vec3(1.f, 0.f, 0.f)) * glm::scale(glm::vec3(12.f, 12.f, 1.f)) * floorMesh->calcAdjustBoundingBoxMatrix();
 	floorObjMesh->SetShader(shadowPass);
 	floorObjMesh->PrepareDrawing();
 	floorObjMesh->SendUniformFloat("nearDepth", nearDepth);
@@ -1047,15 +1073,12 @@ void Scene1::DispatchBlurFilter()
 	{
 		verticalFilter->SendUniformInt("delta", delta);
 		verticalFilter->Dispatch(shadowBufferSize / 16, shadowBufferSize / 16, 1);
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-		glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
-		glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
-		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 		delta *= 2;
 		ActivateAppropriateSATImage(verticalFilter->GetShader());
 	}
 
 	horizontalFilter->PrepareDrawing();
+	SATToggle = !SATToggle;
 
 	// Horizontal pass
 	delta = 1;
@@ -1064,23 +1087,15 @@ void Scene1::DispatchBlurFilter()
 		horizontalFilter->SendUniformInt("delta", delta);
 		ActivateAppropriateSATImage(horizontalFilter->GetShader());
 		horizontalFilter->Dispatch(shadowBufferSize / 16, shadowBufferSize / 16, 1);
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-		glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
-		glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
-		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 		delta *= 2;
 	}
 
 
-	blurFilterShader->PrepareDrawing();
-	ActivateAppropriateSATImage(blurFilterShader->GetShader());
-	textureManager.ActivateImage(blurFilterShader->GetShader(), "shadowBlurred", "dst", GL_WRITE_ONLY);
-	blurFilterShader->SendUniformInt("blurStrength", blurStrength);
-	blurFilterShader->Dispatch(shadowBufferSize / 16, shadowBufferSize / 16, 1);
-	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-	glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
-	glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+	//blurFilterShader->PrepareDrawing();
+	//ActivateAppropriateSATImage(blurFilterShader->GetShader());
+	//textureManager.ActivateImage(blurFilterShader->GetShader(), "shadowBlurred", "dst", GL_WRITE_ONLY);
+	//blurFilterShader->SendUniformInt("blurStrength", blurStrength);
+	//blurFilterShader->Dispatch(shadowBufferSize / 16, shadowBufferSize / 16, 1);
 }
 
 void Scene1::ActivateAppropriateSATImage(GLuint shader)

@@ -48,12 +48,12 @@ uniform vec3 attenuationConstants;
 uniform float nearDepth;
 uniform float farDepth;
 
-float det3(vec3 a, vec3 b, vec3 c)
-{
-	return a.x * (b.y * c.z - b.z * c.y) + a.y * (b.z * c.x - b.x * c.z) + a.z * (b.x * c.y - b.y * c.x);
-}
+uniform float bias;
 
-float CalculateG()
+uniform int blurStrength;
+uniform int shadowMapSize;
+
+bool CalculateG(int strength, inout float G)
 {
 	vec4 shadowCoord = objToShadow * texture(positionBuffer, uv);
 	vec2 shadowIndex = shadowCoord.xy / shadowCoord.w;
@@ -64,44 +64,75 @@ float CalculateG()
 	shadowIndex.y < 0 || shadowIndex.y >= 1.f
 	)
 	{
-		return 0.f;
+		G = 1.f;
+		return true;
 	}
 
-	float bias = 0.01;
-	vec4 lightDepth = texture(shadowBuffer, shadowIndex);
+	vec4 lightDepth = 
+	texture(shadowBuffer, shadowIndex + (vec2(strength, strength) / shadowMapSize))
+	 - texture(shadowBuffer, shadowIndex + (vec2(strength, -strength - 1) / shadowMapSize))
+	 + texture(shadowBuffer, shadowIndex + (vec2(-strength - 1, -strength - 1) / shadowMapSize))
+	 - texture(shadowBuffer, shadowIndex + (vec2(-strength - 1, strength) / shadowMapSize));
+	int numOfPixels = (2 * strength + 1) * (2 * strength + 1);
+	lightDepth = lightDepth / numOfPixels;
 	float pixelDepth = (shadowCoord.w - nearDepth) / (farDepth - nearDepth);
 
 	vec4 halfVector = vec4(0.5, 0.5, 0.5, 0.5);
-	vec4 b = (1 - bias) * lightDepth + bias * halfVector;
+	vec4 sampledDepth = (1 - bias) * lightDepth + bias * halfVector;
 
 	// Use a Cholesky decomposition or Cramer's rule to solve for c
 
-	// Cramer's rule for right now
-	vec3 A = vec3(1, b.x, b.y);
-	vec3 B = vec3(b.x, b.y, b.z);
-	vec3 C = vec3(b.y, b.z, b.w);
-	vec3 Z = vec3(1, pixelDepth, pixelDepth * pixelDepth);
 
-	float d = det3(A, B, C);
-	float c1 = det3(Z,B, C) / d;
-	float c2 = det3(A, Z, C) / d;
-	float c3 = det3(A, B, Z) / d;
-	
-	float z2 = (-c2 + sqrt(c2 * c2 - (4 * c3 * c1)) ) / (2 * c3);
-	float z3 = (-c2 - sqrt(c2 * c2 - (4 * c3 * c1)) ) / (2 * c3);
-	
-	if(pixelDepth <= z2)
+	// Cholesky's rule for right now
+	float a = 1;
+	float b = sampledDepth.x;
+	float c = sampledDepth.y;
+	float d = sampledDepth.y - (b*b);
+	if(d <= 0)
 	{
-		return 0;
-	}
-	else if(pixelDepth <= z3)
-	{
-		return (pixelDepth * z3 - b.x * (pixelDepth + z3) + b.y) / ((z3 - z2) * (pixelDepth - z2));
+		return false;
 	}
 	else
 	{
-		return 1 - ((z2 * z3 - b.x * (z2 + z3) + b.y) / ((pixelDepth - z2) * (pixelDepth - z3)));
+		d = sqrt(d);
 	}
+	float e = (sampledDepth.z - (b*c)) / d;
+	float f = sampledDepth.w - (c*c) - (e*e);
+	if(f <= 0)
+	{
+		return false;
+	}
+	else
+	{
+		f = sqrt(f);
+	}
+	
+	float c1Hat = 1;
+	float c2Hat = (pixelDepth - (b * c1Hat)) / d;
+	float c3Hat = ((pixelDepth * pixelDepth) - (c*c1Hat)-(e*c2Hat)) / f;
+
+	float c3 = c3Hat / f;
+	float c2 = (c2Hat - (e*c3)) / d;
+	float c1 = (c1Hat - (b*c2) - (c*c3));
+	
+	float z2 = (-c2 + sqrt(c2 * c2 - (4 * c3 * c1)) ) / (2 * c3);
+	float z3 = (-c2 - sqrt(c2 * c2 - (4 * c3 * c1)) ) / (2 * c3);
+
+	if(pixelDepth < z2)
+	{
+		G = 0;
+	}
+	else if(pixelDepth < z3)
+	{
+		G = (pixelDepth * z3 - sampledDepth.x * (pixelDepth + z3) + sampledDepth.y) / ((z3 - z2) * (pixelDepth - z2));
+	}
+	else
+	{
+		G = 1 - ((z2 * z3 - sampledDepth.x * (z2 + z3) + sampledDepth.y) / ((pixelDepth - z2) * (pixelDepth - z3)));
+		G = 0;
+	}
+
+	return true;
 }
 
 vec3 CalculateDirectionalLight()
@@ -125,8 +156,20 @@ vec3 CalculateDirectionalLight()
 	
 		
 	// End of shadow algorithm
+	float G = 0.f;
+	int strength = blurStrength;
+	bool result = false;
+	do
+	{
+		result = CalculateG(strength++, G);
+	} while(result != true);
 
-	return (1 - CalculateG()) * intensityLocal;
+	if(G < 0.f)
+	{
+		G = 0.f;
+	}
+
+	return (1 - G) * intensityLocal;
 }
 
 void main()

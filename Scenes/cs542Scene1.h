@@ -226,8 +226,10 @@ private:
 	void ActivateAppropriateSATImage(GLuint shader);
 	bool SATToggle = true;
 
-	static constexpr float nearDepth = 0.1f;
-	static constexpr float farDepth = 100.f;
+	static constexpr float nearDepth = 10.f;
+	static constexpr float farDepth = 55.f;
+	float bias;
+	bool showBlurred;
 };
 
 #endif // CS542_SCENE1_H

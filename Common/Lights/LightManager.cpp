@@ -21,7 +21,7 @@ LightManager::LightManager()
 	lights.resize(MAX_LIGHT);
 
 	intensity = glm::vec3(1.f, 230.f / 255.f, 179.f / 255.f);
-	lightDirection = glm::vec3(0.6, -1.f, -0.5f);
+	lightDirection = glm::vec3(0.f, -1.f, 1.f);
 }
 
 void LightManager::SetLightSize(unsigned size)

@@ -64,6 +64,8 @@ namespace MyImGUI {
 
     float* lightDepthOffset;
     int* blurStrength;
+    float* bias;
+    bool* showBlurred;
 
     namespace Helper
     {
@@ -233,10 +235,12 @@ void MyImGUI::SetHybridDebugging(bool* ptrToGBufferRenderTargetFlag, bool* ptrTo
     isDrawDebugObjects = ptrToisDrawDebugObjects;
 }
 
-void MyImGUI::SetShadowReferences(float* _lightDepthOffset, int* _blurStrength)
+void MyImGUI::SetShadowReferences(float* _lightDepthOffset, int* _blurStrength, float* _bias, bool* _showBlurred)
 {
     lightDepthOffset = _lightDepthOffset;
     blurStrength = _blurStrength;
+    bias = _bias;
+    showBlurred = _showBlurred;
 }
 
 void MyImGUI::Helper::MaterialSetup()
@@ -435,7 +439,9 @@ void MyImGUI::Helper::Shadows()
     if (ImGui::CollapsingHeader("Shadow configurations"))
     {
         ImGui::SliderFloat("Light Depth Offset", lightDepthOffset, -0.5f, 0.5f);
-        ImGui::SliderInt("Blur Strength", blurStrength, 0, 5);
+        ImGui::SliderInt("Blur Strength", blurStrength, 0, 15);
+        ImGui::SliderFloat("Bias", bias, 0.000001f, 0.001f, "%.6f");
+        ImGui::Checkbox("Show Blurred", showBlurred);
     }
 }
 

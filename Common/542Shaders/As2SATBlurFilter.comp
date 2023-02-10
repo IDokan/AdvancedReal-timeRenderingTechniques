@@ -18,16 +18,16 @@ layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 layout(rgba32f) uniform restrict readonly image2D src;
 layout(rgba32f) uniform restrict writeonly image2D dst;
 
-uniform int blurStrength;
+uniform int blurStrength;	// 0~5, 0 -> avg of 1, 1->avg of 9pixels, 2->avg of 25pixels .....
 
 void main() 
 {
 	ivec2 i = ivec2(gl_GlobalInvocationID.xy);
 	vec4 outv = 
-		imageLoad(src, i + ivec2(blurStrength, blurStrength)) 
-		- imageLoad(src, i + ivec2(blurStrength, -blurStrength - 1)) 
-		+ imageLoad(src, i - ivec2(blurStrength + 1, blurStrength + 1))
-		- imageLoad(src, i + ivec2(-blurStrength - 1, blurStrength)) ;
+		imageLoad(src, i + ivec2(blurStrength, blurStrength))						// S(x1, y1)
+		- imageLoad(src, i + ivec2(blurStrength, -blurStrength - 1))			//  - S(x1, y0-1)
+		+ imageLoad(src, i - ivec2(blurStrength + 1, blurStrength + 1))		// + S(x0 - 1, y0 - 1)
+		- imageLoad(src, i + ivec2(-blurStrength - 1, blurStrength)) ;			// - S(x0 - 1, y1)
 	int numOfPixels = (2 * blurStrength + 1) * (2 * blurStrength + 1);
 	barrier();
 	imageStore(dst, i, outv / numOfPixels);
