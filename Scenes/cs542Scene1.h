@@ -215,7 +215,6 @@ private:
 	glm::mat4 lightViewProjectionMatrix;
 	GLuint shadowPass;
 	AssimpShader* assimpShadowPass;
-	float lightDepthOffset;
 
 	void DispatchBlurFilter();
 	ComputeShaderDispatcher* horizontalFilter;
@@ -226,10 +225,9 @@ private:
 	void ActivateAppropriateSATImage(GLuint shader);
 	bool SATToggle = true;
 
-	static constexpr float nearDepth = 10.f;
-	static constexpr float farDepth = 55.f;
+	float nearDepth = 15.f;
+	float farDepth = 40.f;
 	float bias;
-	bool showBlurred;
 };
 
 #endif // CS542_SCENE1_H

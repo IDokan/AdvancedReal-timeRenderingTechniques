@@ -62,10 +62,10 @@ namespace MyImGUI {
     bool* depthWriteFlag;
     bool* isDrawDebugObjects;
 
-    float* lightDepthOffset;
     int* blurStrength;
     float* bias;
-    bool* showBlurred;
+    float* nearDepth;
+    float* farDepth;
 
     namespace Helper
     {
@@ -235,12 +235,12 @@ void MyImGUI::SetHybridDebugging(bool* ptrToGBufferRenderTargetFlag, bool* ptrTo
     isDrawDebugObjects = ptrToisDrawDebugObjects;
 }
 
-void MyImGUI::SetShadowReferences(float* _lightDepthOffset, int* _blurStrength, float* _bias, bool* _showBlurred)
+void MyImGUI::SetShadowReferences(int* _blurStrength, float* _bias, float* _nearDepth, float* _farDepth)
 {
-    lightDepthOffset = _lightDepthOffset;
     blurStrength = _blurStrength;
     bias = _bias;
-    showBlurred = _showBlurred;
+    nearDepth = _nearDepth;
+    farDepth = _farDepth;
 }
 
 void MyImGUI::Helper::MaterialSetup()
@@ -438,10 +438,12 @@ void MyImGUI::Helper::Shadows()
 {
     if (ImGui::CollapsingHeader("Shadow configurations"))
     {
-        ImGui::SliderFloat("Light Depth Offset", lightDepthOffset, -0.5f, 0.5f);
+        //ImGui::SliderFloat("Light Depth Offset", lightDepthOffset, -0.5f, 0.5f);
         ImGui::SliderInt("Blur Strength", blurStrength, 0, 15);
-        ImGui::SliderFloat("Bias", bias, 0.000001f, 0.001f, "%.6f");
-        ImGui::Checkbox("Show Blurred", showBlurred);
+        ImGui::SliderFloat("Bias", bias, 0.000001f, 0.1f, "%.6f");
+        ImGui::SliderFloat("Near Depth", nearDepth, -10.f, 100.f);
+        ImGui::SliderFloat("Far Depth", farDepth, -10.f, 100.f);
+        //ImGui::Checkbox("Show Blurred", showBlurred);
     }
 }
 

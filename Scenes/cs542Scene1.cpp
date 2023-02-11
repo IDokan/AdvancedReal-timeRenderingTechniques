@@ -36,7 +36,7 @@ Scene1::Scene1(int width, int height)
 	:Scene(width, height), vertexAttribute(0), normalAttribute(1), numOfFloatVertex(3),
 	angleOfRotate(0), vertexNormalFlag(false), faceNormalFlag(false),
 	oldX(0.f), oldY(0.f), cameraMovementOffset(0.004f), shouldReload(false), buf("../Common/Meshes/models/bunny.obj"), flip(false), uvImportType(Mesh::UVType::CUBE_MAPPED_UV),
-	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), lightDepthOffset(0.04f), shadowBufferSize(1024), blurStrength(0), bias(0.001f), showBlurred(true)
+	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), shadowBufferSize(2048), blurStrength(0), bias(0.001f)
 {
 	sphereMesh = new Mesh();
 	centralMesh = new Mesh();
@@ -316,16 +316,16 @@ void Scene1::InitGraphics()
 	sphereOrbit->Init(orbitMesh->getVertexBufferSize(), orbitMesh->getVertexBuffer());
 
 	sphereEnvironmentalMatrix.resize(sphereEnvironmentalSize);
-	sphereEnvironmentalMatrix[0] = glm::translate(glm::vec3(7.f, 0.f, 7.f)) * glm::scale(glm::vec3(1.f));
-	sphereEnvironmentalMatrix[1] = glm::translate(glm::vec3(4.f, 0.f, 3.f)) * glm::scale(glm::vec3(0.5f));
-	sphereEnvironmentalMatrix[2] = glm::translate(glm::vec3(5.f, 0.f, -0.5f)) * glm::scale(glm::vec3(2.f));
-	sphereEnvironmentalMatrix[3] = glm::translate(glm::vec3(-3.2f, 0.f, 0.f)) * glm::scale(glm::vec3(0.25f));
-	sphereEnvironmentalMatrix[4] = glm::translate(glm::vec3(1.f, 0.f, 5.5f)) * glm::scale(glm::vec3(1.6f));
-	sphereEnvironmentalMatrix[5] = glm::translate(glm::vec3(-4.5f, 0.f, -4.8f)) * glm::scale(glm::vec3(1.f));
-	sphereEnvironmentalMatrix[6] = glm::translate(glm::vec3(-2.f, 0.f, 2.5f)) * glm::scale(glm::vec3(0.85f));
-	sphereEnvironmentalMatrix[7] = glm::translate(glm::vec3(-6.f, 0.f, -8.5f)) * glm::scale(glm::vec3(1.2f));
-	sphereEnvironmentalMatrix[8] = glm::translate(glm::vec3(6.f, 0.f, -7.f)) * glm::scale(glm::vec3(2.f));
-	sphereEnvironmentalMatrix[9] = glm::translate(glm::vec3(2.f, 0.f, -2.f)) * glm::scale(glm::vec3(0.9f));
+	sphereEnvironmentalMatrix[0] = glm::translate(glm::vec3(7.f, 1.f, 7.f)) * glm::scale(glm::vec3(1.f));
+	sphereEnvironmentalMatrix[1] = glm::translate(glm::vec3(4.f, 0.5f, 3.f)) * glm::scale(glm::vec3(0.5f));
+	sphereEnvironmentalMatrix[2] = glm::translate(glm::vec3(5.f, 2.f, -0.5f)) * glm::scale(glm::vec3(2.f));
+	sphereEnvironmentalMatrix[3] = glm::translate(glm::vec3(-3.2f, 0.25f, 0.f)) * glm::scale(glm::vec3(0.25f));
+	sphereEnvironmentalMatrix[4] = glm::translate(glm::vec3(1.f, 1.8f, 5.5f)) * glm::scale(glm::vec3(1.6f));
+	sphereEnvironmentalMatrix[5] = glm::translate(glm::vec3(-4.5f, 1.f, -4.8f)) * glm::scale(glm::vec3(1.f));
+	sphereEnvironmentalMatrix[6] = glm::translate(glm::vec3(-2.f, 0.85f, 2.5f)) * glm::scale(glm::vec3(0.85f));
+	sphereEnvironmentalMatrix[7] = glm::translate(glm::vec3(-6.f, 1.2f, -8.5f)) * glm::scale(glm::vec3(1.2f));
+	sphereEnvironmentalMatrix[8] = glm::translate(glm::vec3(6.f, 2.f, -7.f)) * glm::scale(glm::vec3(2.f));
+	sphereEnvironmentalMatrix[9] = glm::translate(glm::vec3(2.f, 0.9f, -2.f)) * glm::scale(glm::vec3(0.9f));
 
 	sphereDiffuseColor.resize(sphereEnvironmentalSize);
 	sphereDiffuseColor[0] = glm::vec3(1.f, 0.f, 0.f);
@@ -361,7 +361,7 @@ void Scene1::AddMembersToGUI()
 	MyImGUI::SetShaderReferences(&currentShader, &reloadShader);
 	MyImGUI::SetCentralMesh(centralMesh, mainObjMesh, &shouldReload, buf, &flip, &uvImportType, &calculateUVonCPU);
 	MyImGUI::SetHybridDebugging(&gbufferRenderTargetFlag, &depthWriteFlag, &isDrawDebugObjects);
-	MyImGUI::SetShadowReferences(&lightDepthOffset, &blurStrength, &bias, &showBlurred);
+	MyImGUI::SetShadowReferences(&blurStrength, &bias, &nearDepth, &farDepth);
 }
 void Scene1::Draw2ndPass()
 {
@@ -387,12 +387,13 @@ void Scene1::Draw2ndPass()
 
 	if (!SATToggle)
 	{
-		textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowSATSpare", "shadowBuffer");
+		textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowSATSpare", "shadowBufferSAT");
 	}
 	else
 	{
-		textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowSAT", "shadowBuffer");
+		textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowSAT", "shadowBufferSAT");
 	}
+	textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowBuffer", "shadowBufferMap");
 
 	glm::mat4 diffuseObjToWorld = glm::translate(glm::vec3(-1.f, -1.f, 0.f)) * glm::scale(glm::vec3(2.f));
 	floorObjMesh->SendUniformFloatMatrix4("objToWorld", &diffuseObjToWorld[0][0]);
@@ -410,7 +411,6 @@ void Scene1::Draw2ndPass()
 	floorObjMesh->SendUniformFloat3("intensityEmissive", &intensityEmissive.x);
 	floorObjMesh->SendUniformFloat3("intensityFog", &intensityFog.x);
 	floorObjMesh->SendUniformFloat3("attenuationConstants", &attenuationConstants.x);
-	floorObjMesh->SendUniformFloat("lightDepthOffset", lightDepthOffset);
 
 	floorObjMesh->SendUniformFloat3("lightIntensity", lightManager.GetDirectionalLightIntensity());
 	floorObjMesh->SendUniformFloat3("lightDirection", lightManager.GetDirectionalLightDirection());
@@ -566,7 +566,7 @@ void Scene1::SetupCamera()
 {
 	camera = Camera(eyePoint, targetPoint - eyePoint, relativeUp, fov, aspect, nearDistance, farDistance);
 	glm::vec3* lightDirection = reinterpret_cast<glm::vec3*>(lightManager.GetDirectionalLightDirection());
-	Point lightEye(-lightDirection->x * 18, -lightDirection->y * 18, -lightDirection->z * 18);
+	Point lightEye(-lightDirection->x * 20, -lightDirection->y * 20, -lightDirection->z * 20);
 	Vector lightCameraDirection(lightDirection->x, lightDirection->y, lightDirection->z);
 	lightCamera = Camera(lightEye, lightCameraDirection, relativeUp, fov, 1.f, nearDistance, farDistance);
 
@@ -1073,6 +1073,7 @@ void Scene1::DispatchBlurFilter()
 	{
 		verticalFilter->SendUniformInt("delta", delta);
 		verticalFilter->Dispatch(shadowBufferSize / 16, shadowBufferSize / 16, 1);
+		glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
 		delta *= 2;
 		ActivateAppropriateSATImage(verticalFilter->GetShader());
 	}

@@ -29,5 +29,5 @@ namespace MyImGUI
     void SetShaderReferences(int* currentShader, bool* reloadShader);
     void SetCentralMesh(Mesh* mesh, ObjectMesh* mainObjMesh, bool* shouldReload, char* buf, bool* flip, Mesh::UVType* uvType, bool* calculateUVonCPU);
     void SetHybridDebugging(bool* ptrToGBufferRenderTargetFlag, bool* ptrToDepthWriteFlag, bool* ptrToisDrawDebugObjects);
-    void SetShadowReferences(float* _lightDepthOffset, int* _blurStrength, float* bias, bool* showBlurred);
+    void SetShadowReferences(int* _blurStrength, float* _bias, float* _nearDepth, float* _farDepth);
 }

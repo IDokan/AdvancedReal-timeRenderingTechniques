@@ -18,7 +18,8 @@ uniform sampler2D positionBuffer;
 uniform sampler2D normalBuffer;
 uniform sampler2D diffuseBuffer;
 uniform sampler2D specularBuffer;
-uniform sampler2D shadowBuffer;
+uniform sampler2D shadowBufferSAT;
+uniform sampler2D shadowBufferMap;
 
 out vec4 outColor;
 
@@ -29,8 +30,6 @@ in vec3 cPos;
 
 uniform int width;
 uniform int height;
-
-uniform float lightDepthOffset;
 
 uniform mat4 objToShadow;
 
@@ -53,32 +52,19 @@ uniform float bias;
 uniform int blurStrength;
 uniform int shadowMapSize;
 
-bool CalculateG(int strength, inout float G)
+bool CalculateG(vec2 shadowIndex, float pixelDepth, int strength, float adjustedBias, inout float G)
 {
-	vec4 shadowCoord = objToShadow * texture(positionBuffer, uv);
-	vec2 shadowIndex = shadowCoord.xy / shadowCoord.w;
-
-	// Return 0 if position is out of shadow map or invalid.
-	if(shadowCoord.w < 0 ||
-	shadowIndex.x < 0 || shadowIndex.x >= 1.f ||
-	shadowIndex.y < 0 || shadowIndex.y >= 1.f
-	)
-	{
-		G = 1.f;
-		return true;
-	}
 
 	vec4 lightDepth = 
-	texture(shadowBuffer, shadowIndex + (vec2(strength, strength) / shadowMapSize))
-	 - texture(shadowBuffer, shadowIndex + (vec2(strength, -strength - 1) / shadowMapSize))
-	 + texture(shadowBuffer, shadowIndex + (vec2(-strength - 1, -strength - 1) / shadowMapSize))
-	 - texture(shadowBuffer, shadowIndex + (vec2(-strength - 1, strength) / shadowMapSize));
+	texture(shadowBufferSAT, shadowIndex + (vec2(strength, strength) / shadowMapSize))
+	 - texture(shadowBufferSAT, shadowIndex + (vec2(strength, -strength - 1) / shadowMapSize))
+	 + texture(shadowBufferSAT, shadowIndex + (vec2(-strength - 1, -strength - 1) / shadowMapSize))
+	 - texture(shadowBufferSAT, shadowIndex + (vec2(-strength - 1, strength) / shadowMapSize));
 	int numOfPixels = (2 * strength + 1) * (2 * strength + 1);
 	lightDepth = lightDepth / numOfPixels;
-	float pixelDepth = (shadowCoord.w - nearDepth) / (farDepth - nearDepth);
 
 	vec4 halfVector = vec4(0.5, 0.5, 0.5, 0.5);
-	vec4 sampledDepth = (1 - bias) * lightDepth + bias * halfVector;
+	vec4 sampledDepth = (1 - adjustedBias) * lightDepth + adjustedBias * halfVector;
 
 	// Use a Cholesky decomposition or Cramer's rule to solve for c
 
@@ -107,29 +93,34 @@ bool CalculateG(int strength, inout float G)
 		f = sqrt(f);
 	}
 	
-	float c1Hat = 1;
+	float c1Hat = 1/a;
 	float c2Hat = (pixelDepth - (b * c1Hat)) / d;
 	float c3Hat = ((pixelDepth * pixelDepth) - (c*c1Hat)-(e*c2Hat)) / f;
 
 	float c3 = c3Hat / f;
 	float c2 = (c2Hat - (e*c3)) / d;
-	float c1 = (c1Hat - (b*c2) - (c*c3));
+	float c1 = (c1Hat - (b*c2) - (c*c3))/a;
 	
-	float z2 = (-c2 + sqrt(c2 * c2 - (4 * c3 * c1)) ) / (2 * c3);
-	float z3 = (-c2 - sqrt(c2 * c2 - (4 * c3 * c1)) ) / (2 * c3);
+	float z2 = (-c2 - sqrt(c2 * c2 - (4 * c3 * c1)) ) / (2 * c3);
+	float z3 = (-c2 + sqrt(c2 * c2 - (4 * c3 * c1)) ) / (2 * c3);
+	if(z2 > z3)
+	{
+		float tmp = z2;
+		z2 = z3;
+		z3 = tmp;
+	}
 
-	if(pixelDepth < z2)
+	if(pixelDepth <= z2)
 	{
 		G = 0;
 	}
-	else if(pixelDepth < z3)
+	else if(pixelDepth <= z3)
 	{
 		G = (pixelDepth * z3 - sampledDepth.x * (pixelDepth + z3) + sampledDepth.y) / ((z3 - z2) * (pixelDepth - z2));
 	}
 	else
 	{
 		G = 1 - ((z2 * z3 - sampledDepth.x * (z2 + z3) + sampledDepth.y) / ((pixelDepth - z2) * (pixelDepth - z3)));
-		G = 0;
 	}
 
 	return true;
@@ -152,24 +143,36 @@ vec3 CalculateDirectionalLight()
 
 	vec3 intensityLocal = (lightDiffuse + lightSpecular);
 
-	// Begin Shadow algorithm
-	
-		
-	// End of shadow algorithm
+
+
 	float G = 0.f;
 	int strength = blurStrength;
 	bool result = false;
-	do
-	{
-		result = CalculateG(strength++, G);
-	} while(result != true);
 
-	if(G < 0.f)
+	
+	vec4 shadowCoord = objToShadow * texture(positionBuffer, uv);
+	vec2 shadowIndex = shadowCoord.xy / shadowCoord.w;
+	float pixelDepth = (shadowCoord.w - nearDepth) / (farDepth - nearDepth);
+	float shadowMapDepth = texture(shadowBufferMap, shadowIndex).x;
+	float biasSampled = bias;
+
+	// Return 0 if position is out of shadow map or invalid.
+	if(shadowCoord.w < 0 ||
+	shadowIndex.x < 0 || shadowIndex.x >= 1.f ||
+	shadowIndex.y < 0 || shadowIndex.y >= 1.f
+	)
 	{
 		G = 0.f;
 	}
+	else
+	{
+		do
+		{
+			result = CalculateG(shadowIndex, pixelDepth, strength++, biasSampled, G);
+		} while(result != true);
+	}
 
-	return (1 - G) * intensityLocal;
+	return (1.f - G) * intensityLocal;
 }
 
 void main()
