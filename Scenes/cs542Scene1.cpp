@@ -36,7 +36,7 @@ Scene1::Scene1(int width, int height)
 	:Scene(width, height), vertexAttribute(0), normalAttribute(1), numOfFloatVertex(3),
 	angleOfRotate(0), vertexNormalFlag(false), faceNormalFlag(false),
 	oldX(0.f), oldY(0.f), cameraMovementOffset(0.004f), shouldReload(false), buf("../Common/Meshes/models/bunny.obj"), flip(false), uvImportType(Mesh::UVType::CUBE_MAPPED_UV),
-	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), shadowBufferSize(2048), blurStrength(0), bias(0.001f)
+	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), shadowBufferSize(1024), blurStrength(0), bias(0.001f)
 {
 	sphereMesh = new Mesh();
 	centralMesh = new Mesh();
@@ -384,8 +384,7 @@ void Scene1::Draw2ndPass()
 	//{
 	//	textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowBuffer");
 	//}
-
-	if (!SATToggle)
+	if (SATToggle)
 	{
 		textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowSATSpare", "shadowBufferSAT");
 	}
@@ -1092,11 +1091,11 @@ void Scene1::DispatchBlurFilter()
 	}
 
 
-	//blurFilterShader->PrepareDrawing();
-	//ActivateAppropriateSATImage(blurFilterShader->GetShader());
-	//textureManager.ActivateImage(blurFilterShader->GetShader(), "shadowBlurred", "dst", GL_WRITE_ONLY);
-	//blurFilterShader->SendUniformInt("blurStrength", blurStrength);
-	//blurFilterShader->Dispatch(shadowBufferSize / 16, shadowBufferSize / 16, 1);
+	blurFilterShader->PrepareDrawing();
+	ActivateAppropriateSATImage(blurFilterShader->GetShader());
+	textureManager.ActivateImage(blurFilterShader->GetShader(), "shadowBlurred", "dst", GL_WRITE_ONLY);
+	blurFilterShader->SendUniformInt("blurStrength", blurStrength);
+	blurFilterShader->Dispatch(shadowBufferSize / 16, shadowBufferSize / 16, 1);
 }
 
 void Scene1::ActivateAppropriateSATImage(GLuint shader)

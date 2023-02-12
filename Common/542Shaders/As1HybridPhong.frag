@@ -61,7 +61,14 @@ bool CalculateG(vec2 shadowIndex, float pixelDepth, int strength, float adjusted
 	 + texture(shadowBufferSAT, shadowIndex + (vec2(-strength - 1, -strength - 1) / shadowMapSize))
 	 - texture(shadowBufferSAT, shadowIndex + (vec2(-strength - 1, strength) / shadowMapSize));
 	int numOfPixels = (2 * strength + 1) * (2 * strength + 1);
-	lightDepth = lightDepth / numOfPixels;
+	if(strength == 0)
+	{
+		lightDepth = texture(shadowBufferMap, shadowIndex);
+	}
+	else
+	{
+		lightDepth = lightDepth / numOfPixels;
+	}
 
 	vec4 halfVector = vec4(0.5, 0.5, 0.5, 0.5);
 	vec4 sampledDepth = (1 - adjustedBias) * lightDepth + adjustedBias * halfVector;
