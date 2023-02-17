@@ -228,6 +228,12 @@ private:
 	float nearDepth = 15.f;
 	float farDepth = 40.f;
 	float bias;
+
+	char cubePath[64];
+	GLuint skydomeShader;
+	void RenderSkydome();
+	Mesh* cubeMesh;
+	ObjectMesh* cubeObjMesh;
 };
 
 #endif // CS542_SCENE1_H

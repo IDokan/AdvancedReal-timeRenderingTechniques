@@ -36,7 +36,8 @@ Scene1::Scene1(int width, int height)
 	:Scene(width, height), vertexAttribute(0), normalAttribute(1), numOfFloatVertex(3),
 	angleOfRotate(0), vertexNormalFlag(false), faceNormalFlag(false),
 	oldX(0.f), oldY(0.f), cameraMovementOffset(0.004f), shouldReload(false), buf("../Common/Meshes/models/bunny.obj"), flip(false), uvImportType(Mesh::UVType::CUBE_MAPPED_UV),
-	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), shadowBufferSize(1024), blurStrength(0), bias(0.001f)
+	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), shadowBufferSize(1024), blurStrength(0), bias(0.001f),
+	cubePath("../Common/Meshes/models/cube.obj")
 {
 	sphereMesh = new Mesh();
 	centralMesh = new Mesh();
@@ -86,6 +87,9 @@ Scene1::Scene1(int width, int height)
 	myReader = new MyObjReader();
 
 	sphereEnvironmentalSize = 10;
+
+	cubeMesh = new Mesh();
+	cubeObjMesh = new ObjectMesh();
 }
 
 Scene1::~Scene1()
@@ -101,6 +105,7 @@ int Scene1::Init()
 
 	myReader->ReadObjFile("../Common/Meshes/models/bunny.obj", centralMesh, false, Mesh::UVType::CUBE_MAPPED_UV);
 	myReader->ReadObjFile("../Common/Meshes/models/quad.obj", floorMesh, false, Mesh::UVType::CUBE_MAPPED_UV);
+	myReader->ReadObjFile(cubePath, cubeMesh, false, Mesh::UVType::CUBE_MAPPED_UV);
 
 	model = new Model("../Common/Meshes/models/Armadillo.ply");
 
@@ -160,6 +165,9 @@ void Scene1::LoadAllShaders()
 	horizontalFilter = new ComputeShaderDispatcher("../Common/542Shaders/As2SATHorizontal.comp");
 	verticalFilter = new ComputeShaderDispatcher("../Common/542Shaders/As2SATVertical.comp");
 	blurFilterShader = new ComputeShaderDispatcher("../Common/542Shaders/As2SATBlurFilter.comp");
+
+	skydomeShader = LoadShaders("../Common/542Shaders/As3Skydome.vert",
+		"../Common/542Shaders/As3Skydome.frag");
 }
 
 int Scene1::preRender()
@@ -178,7 +186,7 @@ int Scene1::preRender()
 	centralMatrix = glm::rotate(handlerDisplacement.x * displacementToPi, glm::vec3(0.f, 1.f, 0.f)) *
 		glm::rotate(handlerDisplacement.y * displacementToPi, glm::vec3(1.f, 0.f, 0.f)) *
 		glm::scale(scaleVector) * centralMesh->calcAdjustBoundingBoxMatrix();
-	modelMatrix =
+	modelMatrix = glm::translate(glm::vec3(0.f, 0.f, -10.f)) * 
 		glm::rotate(180.f * displacementToPi, glm::vec3(0.f, 1.f, 0.f)) *
 		glm::scale(scaleVector) * model->CalcAdjustBoundingBoxMatrix();
 	floorMatrix = glm::translate(glm::vec3(0.f, -1.f, 0.f)) * glm::rotate(glm::half_pi<float>(), glm::vec3(-1.f, 0.f, 0.f)) * glm::scale(glm::vec3(10.f, 10.f, 1.f)) * floorMesh->calcAdjustBoundingBoxMatrix();
@@ -216,7 +224,8 @@ int Scene1::preRender()
 
 int Scene1::Render()
 {
-	HybridRendering();
+	//HybridRendering();
+	RenderSkydome();
 
 	return 0;
 }
@@ -239,6 +248,7 @@ void Scene1::CleanUp()
 	glDeleteProgram(hybridPhong);
 	glDeleteProgram(hybridLocalLights);
 	glDeleteProgram(shadowPass);
+	glDeleteProgram(skydomeShader);
 
 
 	MyImGUI::ClearImGUI();
@@ -258,6 +268,11 @@ void Scene1::CleanUp()
 	delete spheres;
 	delete sphereOrbit;
 	delete orbitMesh;
+	delete floorMesh;
+	delete floorObjMesh;
+	
+	delete cubeMesh;
+	delete cubeObjMesh;
 
 	delete myReader;
 
@@ -284,6 +299,12 @@ void Scene1::InitGraphics()
 	textureManager.AddTexture(
 		"../Common/ppms/metal_roof_spec_512x512.ppm",
 		"specularTexture", Texture::TextureType::PPM);
+	textureManager.AddTexture(
+		"../Common/ppms/Tokyo_BigSight/Tokyo_BigSight_3k.hdr",
+		"skydomeImage",
+		Texture::TextureType::HDR
+	);
+
 
 	mainObjMesh->SetShader(phongShading);
 	mainObjMesh->Init(centralMesh->getVertexCount(), centralMesh->getVertexBuffer(), centralMesh->getVertexNormals(), centralMesh->getVertexUVs(),
@@ -298,6 +319,9 @@ void Scene1::InitGraphics()
 	floorObjMesh->Init(floorMesh->getVertexCount(), floorMesh->getVertexBuffer(), floorMesh->getVertexNormals(), reinterpret_cast<GLfloat*>(uvs.data()),
 		floorMesh->getIndexBufferSize(), floorMesh->getIndexBuffer());
 
+	cubeObjMesh->SetShader(skydomeShader);
+	cubeObjMesh->Init(cubeMesh->getVertexCount(), cubeMesh->getVertexBuffer(), cubeMesh->getVertexNormals(), cubeMesh->getVertexUVs(),
+		cubeMesh->getIndexBufferSize(), cubeMesh->getIndexBuffer());
 
 	// normal inits
 	normalMesh->SetShader(normalDisplayProgramID);
@@ -1111,4 +1135,17 @@ void Scene1::ActivateAppropriateSATImage(GLuint shader)
 		textureManager.ActivateImage(shader, "shadowSAT", "dst", GL_WRITE_ONLY);
 	}
 	SATToggle = !SATToggle;
+}
+
+void Scene1::RenderSkydome()
+{
+	cubeObjMesh->SetShader(skydomeShader);
+	cubeObjMesh->PrepareDrawing();
+	glm::mat4 mappingMatrix = glm::scale(glm::vec3(10.f)) * glm::translate(glm::vec3(-1.f));
+	glm::mat4 objToWorld = glm::translate(glm::vec3(camera.Eye().x, camera.Eye().y, camera.Eye().z));
+	cubeObjMesh->SendUniformFloatMatrix4("mappingMatrix", &mappingMatrix[0][0]);
+	cubeObjMesh->SendUniformFloatMatrix4("objToWorld", &objToWorld[0][0]);
+	cubeObjMesh->SendUniformFloatMatrix4("worldToNDC", &worldToNDC[0][0]);
+	textureManager.ActivateTexture(cubeObjMesh->GetShader(), "skydomeImage", "equirectangularMap");
+	cubeObjMesh->Draw(cubeMesh->getIndexBufferSize());
 }
