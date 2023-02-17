@@ -13,6 +13,7 @@ End Header --------------------------------------------------------*/
 
 #include <../Common/Textures/Texture.h>
 #include <../Common/ppms/ppmReader.h>
+#include <stb_image.h>
 #include <vector>
 
 Texture::Texture()
@@ -36,6 +37,11 @@ void Texture::SetupTexture(const char* path, int _textureNum, enum class Texture
 	case Texture::TextureType::PPM:
 		pixels = readImage(path, width, height);
 		break;
+	case Texture::TextureType::HDR:
+		int nrComponents;
+		stbi_set_flip_vertically_on_load(true);
+		pixels = stbi_loadf(path, &width, &height, &nrComponents, 0);
+		break;
 	default:
 		break;
 	}
@@ -47,12 +53,24 @@ void Texture::SetupTexture(const char* path, int _textureNum, enum class Texture
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, pixels);
+	if (tType == Texture::TextureType::HDR)
+	{
+		if (pixels)	// If pixel data has no problem,
+		{
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, pixels);
 
-	delete[] pixels;
+			stbi_image_free(pixels);
+		}
+	}
+	else
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, pixels);
+
+		delete[] pixels;
+	}
 }
 
 void Texture::SetupTexture(int width, int height, int _textureNum)
@@ -115,4 +133,8 @@ GLuint Texture::GetHandle() const
 void Texture::Clear()
 {
 	glDeleteTextures(1, &textureHandle);
+}
+
+void Texture::SetupHdrTexture(const char* path, int textureNum)
+{
 }

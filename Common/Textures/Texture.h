@@ -22,6 +22,7 @@ public:
 	enum class TextureType {
 		BMP,
 		PPM,
+		HDR,
 	} TextureType;
 public:
 	Texture();
@@ -36,6 +37,8 @@ public:
 
 	void Clear();
 
+private:
+	void SetupHdrTexture(const char* path, int textureNum);
 private:
 	int width;
 	int height;
