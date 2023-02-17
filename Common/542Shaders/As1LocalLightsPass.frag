@@ -18,6 +18,7 @@ uniform sampler2D positionBuffer;
 uniform sampler2D normalBuffer;
 uniform sampler2D diffuseBuffer;
 uniform sampler2D specularBuffer;
+uniform sampler2D irradianceMap;
 
 uniform int width;
 uniform int height;
@@ -42,6 +43,18 @@ in TheStruct lightInfo;
 in vec3 view;
 out vec4 outColor;
 
+const vec2 invAtan = vec2(0.1591, 0.3183);
+const float PI = 3.1415926538;
+
+vec3 GetIrradianceColor(vec3 n)
+{
+	
+	vec2 equirectangularUV = vec2(atan(n.z, n.x), asin(n.y));
+	equirectangularUV *= invAtan;
+	equirectangularUV += 0.5f;
+
+	return texture(irradianceMap, equirectangularUV).xyz;
+}
 
 vec3 CalculatePointLight(TheStruct item, vec2 uv)
 {
@@ -52,9 +65,10 @@ vec3 CalculatePointLight(TheStruct item, vec2 uv)
 	float distanceLight = length(lightVector);
 	lightVector = normalize(lightVector);
 	vec3 reflection = 2*dot(vertexNormal, lightVector)*vertexNormal - lightVector;
-
-	vec3 lightDiffuse = texture(diffuseBuffer, uv).rgb * max(dot(vertexNormal, lightVector), 0) * item.intensityDiffuse;
-	vec3 lightSpecular = texture(specularBuffer, uv).rgb* pow(max(dot(reflection, view), 0), ns) * item.intensitySpecular;
+	
+	vec4 Kd = texture(diffuseBuffer, uv);
+	vec3 lightDiffuse = Kd.xyz / PI * GetIrradianceColor(vertexNormal);
+	vec3 lightSpecular = vec3(0);//texture(specularBuffer, uv).rgb* pow(max(dot(reflection, view), 0), ns) * item.intensitySpecular;
 	lightSpecular.r = max(lightSpecular.r, 0);
 	lightSpecular.g = max(lightSpecular.g, 0);
 	lightSpecular.b = max(lightSpecular.b, 0);

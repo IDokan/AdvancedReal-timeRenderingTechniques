@@ -20,6 +20,7 @@ uniform sampler2D diffuseBuffer;
 uniform sampler2D specularBuffer;
 uniform sampler2D shadowBufferSAT;
 uniform sampler2D shadowBufferMap;
+uniform sampler2D irradianceMap;
 
 out vec4 outColor;
 
@@ -51,6 +52,10 @@ uniform float bias;
 
 uniform int blurStrength;
 uniform int shadowMapSize;
+
+
+const vec2 invAtan = vec2(0.1591, 0.3183);
+const float PI = 3.1415926538;
 
 bool CalculateG(vec2 shadowIndex, float pixelDepth, int strength, float adjustedBias, inout float G)
 {
@@ -133,8 +138,24 @@ bool CalculateG(vec2 shadowIndex, float pixelDepth, int strength, float adjusted
 	return true;
 }
 
+vec3 GetIrradianceColor(vec3 n)
+{
+	
+	vec2 equirectangularUV = vec2(atan(n.z, n.x), asin(n.y));
+	equirectangularUV *= invAtan;
+	equirectangularUV += 0.5f;
+
+	return texture(irradianceMap, equirectangularUV).xyz;
+}
+
 vec3 CalculateDirectionalLight()
 {
+	vec4 Kd = texture(diffuseBuffer, uv);
+	if(Kd.a < -400)
+	{
+		return Kd.xyz;
+	}
+
 	vec3 vertexNormal = normalize(texture(normalBuffer, uv).rgb);
 	vec3 view = normalize(cPos - texture(positionBuffer, uv).rgb);
 
@@ -142,8 +163,8 @@ vec3 CalculateDirectionalLight()
 	lightVector = normalize(lightVector);
 	vec3 reflection = 2*dot(vertexNormal, lightVector)*vertexNormal - lightVector;
 
-	vec3 lightDiffuse = texture(diffuseBuffer, uv).rgb * max(dot(lightVector, vertexNormal), 0) * lightIntensity;
-	vec3 lightSpecular = texture(specularBuffer, uv).rgb* pow(max(dot(view, reflection), 0), ns) * lightIntensity;
+	vec3 lightDiffuse = Kd.xyz / PI * GetIrradianceColor(vertexNormal);
+	vec3 lightSpecular = vec3(0);//texture(specularBuffer, uv).rgb* pow(max(dot(view, reflection), 0), ns) * lightIntensity;
 	lightSpecular.r = max(lightSpecular.r, 0);
 	lightSpecular.g = max(lightSpecular.g, 0);
 	lightSpecular.b = max(lightSpecular.b, 0);
@@ -190,9 +211,9 @@ void main()
 
 
 	
-	float distanceView = texture(diffuseBuffer, uv).a;
-	float s = (zFar - distanceView) / (zFar - zNear);
-	color = s*color + (1-s)*intensityFog;
+	// float distanceView = texture(diffuseBuffer, uv).a;
+	// float s = (zFar - distanceView) / (zFar - zNear);
+	// color = s*color + (1-s)*intensityFog;
 	
 	outColor = vec4(color, texture(specularBuffer, uv).a);
 }

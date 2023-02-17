@@ -22,8 +22,6 @@ public:
 	TextureManager();
 	void AddTexture(const char* path, std::string textureName, enum class Texture::TextureType t);
 
-	void AddHDRTexture(const char* path, std::string textureName);
-
 	void AddTexture(int width, int height, std::string textureName);
 
 	void ActivateTexture(GLuint programID, std::string activateName);

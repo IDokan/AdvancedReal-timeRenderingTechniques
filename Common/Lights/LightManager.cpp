@@ -20,7 +20,7 @@ LightManager::LightManager()
 	currentLightSize = 1;
 	lights.resize(MAX_LIGHT);
 
-	intensity = glm::vec3(1.f, 230.f / 255.f, 179.f / 255.f);
+	intensity = glm::vec3(1.f, 1.f, 1.f);
 	lightDirection = glm::vec3(0.4f, -1.f, -0.5f);
 }
 

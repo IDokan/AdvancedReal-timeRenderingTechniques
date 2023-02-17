@@ -186,7 +186,7 @@ int Scene1::preRender()
 	centralMatrix = glm::rotate(handlerDisplacement.x * displacementToPi, glm::vec3(0.f, 1.f, 0.f)) *
 		glm::rotate(handlerDisplacement.y * displacementToPi, glm::vec3(1.f, 0.f, 0.f)) *
 		glm::scale(scaleVector) * centralMesh->calcAdjustBoundingBoxMatrix();
-	modelMatrix = glm::translate(glm::vec3(0.f, 0.f, -10.f)) * 
+	modelMatrix = 
 		glm::rotate(180.f * displacementToPi, glm::vec3(0.f, 1.f, 0.f)) *
 		glm::scale(scaleVector) * model->CalcAdjustBoundingBoxMatrix();
 	floorMatrix = glm::translate(glm::vec3(0.f, -1.f, 0.f)) * glm::rotate(glm::half_pi<float>(), glm::vec3(-1.f, 0.f, 0.f)) * glm::scale(glm::vec3(10.f, 10.f, 1.f)) * floorMesh->calcAdjustBoundingBoxMatrix();
@@ -224,8 +224,8 @@ int Scene1::preRender()
 
 int Scene1::Render()
 {
-	//HybridRendering();
-	RenderSkydome();
+	HybridRendering();
+	//RenderSkydome();
 
 	return 0;
 }
@@ -300,8 +300,13 @@ void Scene1::InitGraphics()
 		"../Common/ppms/metal_roof_spec_512x512.ppm",
 		"specularTexture", Texture::TextureType::PPM);
 	textureManager.AddTexture(
-		"../Common/ppms/Tokyo_BigSight/Tokyo_BigSight_3k.hdr",
+		"../Common/ppms/Tropical_Beach/Tropical_Beach_3k.hdr",
 		"skydomeImage",
+		Texture::TextureType::HDR
+	);
+	textureManager.AddTexture(
+		"../Common/ppms/Tropical_Beach/Tropical_Beach_Env.hdr",
+		"irradianceMap",
 		Texture::TextureType::HDR
 	);
 
@@ -362,6 +367,16 @@ void Scene1::InitGraphics()
 	sphereDiffuseColor[7] = glm::vec3(0.f, 1.f, 0.6f);
 	sphereDiffuseColor[8] = glm::vec3(0.6f, 0.f, 1.f);
 	sphereDiffuseColor[9] = glm::vec3(0.1f, 0.1f, 0.1f);
+	//sphereDiffuseColor[0] = glm::vec3(1.f);
+	//sphereDiffuseColor[1] = glm::vec3(1.f);
+	//sphereDiffuseColor[2] = glm::vec3(1.f);
+	//sphereDiffuseColor[3] = glm::vec3(1.f);
+	//sphereDiffuseColor[4] = glm::vec3(1.f);
+	//sphereDiffuseColor[5] = glm::vec3(1.f);
+	//sphereDiffuseColor[6] = glm::vec3(1.f);
+	//sphereDiffuseColor[7] = glm::vec3(1.f);
+	//sphereDiffuseColor[8] = glm::vec3(1.f);
+	//sphereDiffuseColor[9] = glm::vec3(1.f);
 
 	sphereSpecularColor.resize(sphereEnvironmentalSize);
 	sphereSpecularColor[0] = glm::vec3(0.f, 0.f, 0.f);
@@ -417,6 +432,7 @@ void Scene1::Draw2ndPass()
 		textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowSAT", "shadowBufferSAT");
 	}
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowBuffer", "shadowBufferMap");
+	textureManager.ActivateTexture(floorObjMesh->GetShader(), "irradianceMap");
 
 	glm::mat4 diffuseObjToWorld = glm::translate(glm::vec3(-1.f, -1.f, 0.f)) * glm::scale(glm::vec3(2.f));
 	floorObjMesh->SendUniformFloatMatrix4("objToWorld", &diffuseObjToWorld[0][0]);
@@ -543,7 +559,6 @@ void Scene1::Draw1stPass()
 
 	DrawEnvironmentalObjects();
 
-
 	frameBuffer.RestoreDefaultFrameBuffer();
 }
 
@@ -562,6 +577,7 @@ void Scene1::DrawLocalLightsPass()
 	textureManager.ActivateTexture(spheres->GetShader(), "positionBuffer");
 	textureManager.ActivateTexture(spheres->GetShader(), "normalBuffer");
 	textureManager.ActivateTexture(spheres->GetShader(), "shadowBuffer");
+	textureManager.ActivateTexture(spheres->GetShader(), "irradianceMap");
 
 
 	Point c = camera.Eye();
@@ -913,6 +929,8 @@ void Scene1::HybridRendering()
 
 	CopyDepthInfo();
 
+	RenderSkydome();
+
 	RenderDebugObjects();
 }
 
@@ -944,7 +962,7 @@ void Scene1::RenderDeferredObjects()
 	glCullFace(GL_FRONT);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE, GL_ONE);
-	// DrawLocalLightsPass();
+	 DrawLocalLightsPass();
 	glDisable(GL_BLEND);
 	glCullFace(GL_BACK);
 
@@ -991,43 +1009,27 @@ void Scene1::DrawGBufferRenderTargets()
 {
 	floorObjMesh->SetShader(fboCheckShader);
 	floorObjMesh->PrepareDrawing();
-	textureManager.ActivateTexture(fboCheckShader, "shadowBuffer", "tex");
+	textureManager.ActivateTexture(fboCheckShader, "positionBuffer", "tex");
 	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[0][0][0]);
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
 
-	//floorObjMesh->PrepareDrawing();
-	//floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[1][0][0]);
-	//textureManager.ActivateTexture(fboCheckShader, "positionBuffer", "tex");
-	//floorObjMesh->Draw(floorMesh->getIndexBufferSize());
+	floorObjMesh->PrepareDrawing();
+	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[1][0][0]);
+	textureManager.ActivateTexture(fboCheckShader, "normalBuffer", "tex");
+	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
 
-	//floorObjMesh->PrepareDrawing();
-	//floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[2][0][0]);
-	//textureManager.ActivateTexture(fboCheckShader, "shadowSAT", "tex");
-	//floorObjMesh->Draw(floorMesh->getIndexBufferSize());
+	floorObjMesh->PrepareDrawing();
+	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[2][0][0]);
+	textureManager.ActivateTexture(fboCheckShader, "diffuseBuffer", "tex");
+	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
 	floorObjMesh->SetShader(fboCheckShader);
 	floorObjMesh->PrepareDrawing();
 	 floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[3][0][0]);
-	 textureManager.ActivateTexture(fboCheckShader, "shadowSAT", "tex");
+	 textureManager.ActivateTexture(fboCheckShader, "specularBuffer", "tex");
 	 floorObjMesh->Draw(floorMesh->getIndexBufferSize());
-
-	floorObjMesh->SetShader(fboCheckShader);
-	floorObjMesh->PrepareDrawing();
-	// floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[3][0][0]);
-	glm::mat4 tmp = glm::scale(glm::vec3(2.f, 2.f, 2.f)) * glm::translate(glm::vec3(-0.5f, -0.5f, 0.f));
-	floorObjMesh->SendUniformFloatMatrix4("trans", &tmp[0][0]);
-
-	if (!SATToggle)
-	{
-		textureManager.ActivateTexture(fboCheckShader, "shadowSATSpare", "shadowBuffer");
-	}
-	else
-	{
-		textureManager.ActivateTexture(fboCheckShader, "shadowSAT", "shadowBuffer");
-	}
-	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 }
 
 void Scene1::DrawEnvironmentalObjects()
@@ -1141,7 +1143,7 @@ void Scene1::RenderSkydome()
 {
 	cubeObjMesh->SetShader(skydomeShader);
 	cubeObjMesh->PrepareDrawing();
-	glm::mat4 mappingMatrix = glm::scale(glm::vec3(10.f)) * glm::translate(glm::vec3(-1.f));
+	glm::mat4 mappingMatrix = glm::scale(glm::vec3(100.f)) * glm::translate(glm::vec3(-1.f));
 	glm::mat4 objToWorld = glm::translate(glm::vec3(camera.Eye().x, camera.Eye().y, camera.Eye().z));
 	cubeObjMesh->SendUniformFloatMatrix4("mappingMatrix", &mappingMatrix[0][0]);
 	cubeObjMesh->SendUniformFloatMatrix4("objToWorld", &objToWorld[0][0]);
