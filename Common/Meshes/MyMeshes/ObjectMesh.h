@@ -26,6 +26,7 @@ public:
 		int indexCount, GLuint* indices);
 	bool SendUniformBlockVector3s(const GLchar* blockName, const GLsizei blockPropertyCount, const GLchar* const* blockPropertyNames, const float** blockPropertyData);
 	bool SendUniformBlockVector3s(const GLchar* blockName, const GLsizei blockPropertyCount, const GLchar* const* blockPropertyNames, const glm::vec3* blockPropertyData);
+	bool SendUniformBlockFloats(const GLchar* blockName, const GLsizei blockSize, const float* blockData);
 	void PrepareDrawing();
 	void Draw(int indexCount);
 	void DrawInstanced(int indexCount, int instanceCount);

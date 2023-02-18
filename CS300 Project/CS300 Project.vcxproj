@@ -195,6 +195,7 @@ xcopy /y /d "..\ThirdParty\assimp\lib\*.dll" "$(TargetDir)"</Command>
     <ClCompile Include="..\Common\Scene.cpp" />
     <ClCompile Include="..\Common\shader.cpp" />
     <ClCompile Include="..\Common\shaders\AssimpShader.cpp" />
+    <ClCompile Include="..\Common\Structs.cpp" />
     <ClCompile Include="..\Common\Textures\Texture.cpp" />
     <ClCompile Include="..\Common\Textures\TextureManager.cpp" />
     <ClCompile Include="..\myGUI\imgui.cpp" />
@@ -229,6 +230,7 @@ xcopy /y /d "..\ThirdParty\assimp\lib\*.dll" "$(TargetDir)"</Command>
     <ClInclude Include="..\Common\Scene.h" />
     <ClInclude Include="..\Common\shader.hpp" />
     <ClInclude Include="..\Common\shaders\AssimpShader.h" />
+    <ClInclude Include="..\Common\Structs.h" />
     <ClInclude Include="..\Common\Textures\Texture.h" />
     <ClInclude Include="..\Common\Textures\TextureManager.h" />
     <ClInclude Include="..\myGUI\imconfig.h" />

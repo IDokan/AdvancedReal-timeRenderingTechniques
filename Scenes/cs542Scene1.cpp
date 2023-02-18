@@ -459,6 +459,7 @@ void Scene1::Draw2ndPass()
 	floorObjMesh->SendUniformFloat("bias", bias);
 	floorObjMesh->SendUniformInt("blurStrength", blurStrength);
 	floorObjMesh->SendUniformInt("shadowMapSize", shadowBufferSize);
+	floorObjMesh->SendUniformBlockFloats(h.GetBlockName(), h.GetBlockDataSize(), h.GetData());
 
 
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());

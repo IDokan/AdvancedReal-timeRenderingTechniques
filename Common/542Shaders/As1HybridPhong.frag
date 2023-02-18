@@ -57,6 +57,12 @@ uniform int shadowMapSize;
 const vec2 invAtan = vec2(0.1591, 0.3183);
 const float PI = 3.1415926538;
 
+uniform HammersleyBlock
+{
+	float N;
+	float tmp[2*100];
+} Hammersley;
+
 bool CalculateG(vec2 shadowIndex, float pixelDepth, int strength, float adjustedBias, inout float G)
 {
 
@@ -216,4 +222,5 @@ void main()
 	// color = s*color + (1-s)*intensityFog;
 	
 	outColor = vec4(color, texture(specularBuffer, uv).a);
+	outColor = vec4(Hammersley.tmp[0], Hammersley.tmp[1], 0, 1);
 }

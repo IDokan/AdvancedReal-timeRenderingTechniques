@@ -15,7 +15,7 @@ End Header --------------------------------------------------------*/
 #include <iostream>
 
 ObjectMesh::ObjectMesh()
-	:MyMesh(), normalBuffer(0), uvBuffer(0), indexBuffer(0), uniformBlockBuffer(0)
+	:MyMesh(), normalBuffer(0), uvBuffer(0), indexBuffer(0), uniformBlockBuffer(0), uniformBlockIndex(0)
 {
 }
 
@@ -202,6 +202,32 @@ bool ObjectMesh::SendUniformBlockVector3s(const GLchar* blockName, const GLsizei
 	glBindBufferBase(GL_UNIFORM_BUFFER, uniformBlockIndex, uniformBlockBuffer);
 
 	delete[] buffer;
+
+	return true;
+}
+
+bool ObjectMesh::SendUniformBlockFloats(const GLchar* blockName, const GLsizei blockSize, const float* blockData)
+{
+	glUseProgram(programIDReference);
+	glBindVertexArray(VAO);
+	// Step 2.	First get the block index
+	uniformBlockIndex = glGetUniformBlockIndex(programIDReference, blockName);
+	if (uniformBlockIndex == GL_INVALID_INDEX)
+	{
+		std::cout << blockName << " is not applied, uniformBlockIndex == GL_INVALID_INDEX" << std::endl;
+		return false;
+	}
+
+	// Step 5.	Create OpenGL buffer to manage this uniform block
+	if (uniformBlockBuffer == 0)
+	{
+		glGenBuffers(1, &uniformBlockBuffer);
+		glBindBuffer(GL_UNIFORM_BUFFER, uniformBlockBuffer);
+	}
+	glBindBufferBase(GL_UNIFORM_BUFFER, uniformBlockIndex, uniformBlockBuffer);
+	glBufferData(GL_UNIFORM_BUFFER, blockSize, blockData, GL_STATIC_DRAW);
+
+	glUniformBlockBinding(programIDReference, uniformBlockIndex, uniformBlockIndex);
 
 	return true;
 }

@@ -30,6 +30,7 @@ End Header --------------------------------------------------------*/
 
 #include <../Common/FBO/FBO.h>
 
+#include <../Common/Structs.h>
 
 class Mesh;
 class LineMesh;
@@ -234,6 +235,8 @@ private:
 	void RenderSkydome();
 	Mesh* cubeMesh;
 	ObjectMesh* cubeObjMesh;
+
+	struct Hammersley h;
 };
 
 #endif // CS542_SCENE1_H

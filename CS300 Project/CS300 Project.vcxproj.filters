@@ -159,6 +159,9 @@
     <ClCompile Include="..\Common\Meshes\MyMeshes\ComputeShaderDispatcher.cpp">
       <Filter>Common\Meshes\MyMeshes</Filter>
     </ClCompile>
+    <ClCompile Include="..\Common\Structs.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\shader.hpp">
@@ -262,6 +265,9 @@
     </ClInclude>
     <ClInclude Include="..\Common\Meshes\MyMeshes\ComputeShaderDispatcher.h">
       <Filter>Common\Meshes\MyMeshes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\Structs.h">
+      <Filter>Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
