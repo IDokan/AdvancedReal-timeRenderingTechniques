@@ -128,6 +128,40 @@ int Scene1::Init()
 
 	frameBuffer.InitializeCustomBuffer(&textureManager, textureNames);
 
+	//glm::vec3 R = glm::vec3(0.f, 1.f, 0.f);
+	//glm::vec3 A = glm::normalize(glm::vec3(-R.y, R.x, 0));
+	//glm::vec3 B = glm::normalize(glm::cross(R, A));
+	//std::cout << "A: " << A.x << ", " << A.y << ", " << A.z << "\n";
+	//std::cout << "B: " << B.x << ", " << B.y << ", " << B.z << "\n";
+	//float tmp0 = 0.f, tmp1 = 0.f;
+	//for (size_t i = 0; i < static_cast<size_t>(h.N * 2 + 1); i++)
+	//{
+	//	if (i == 0)
+	//	{
+	//		continue;
+	//	}
+
+	//	float u = h.GetData()[i];
+	//	float v = h.GetData()[++i];
+	//	tmp0 += u;
+	//	tmp1 += v;
+	//	std::cout << u << ", " << v << " == ";
+	//	float u2 = u;
+	//	float v2 = acosf(std::powf(v, 1.f / (1.f + 1.f))) / glm::pi<float>();
+	//	std::cout << u2 << ", " << v2;
+
+
+	//	glm::vec3 result;
+	//	result.x = cos(2.f * glm::pi<float>() * (0.5f - u2)) * sin(glm::pi<float>() * v2);
+	//	result.y = sin(2.f * glm::pi<float>() * (0.5f - u2)) * sin(glm::pi<float>() * v2);
+	//	result.z = cos(glm::pi<float>() * v2);
+	//	std::cout << " => Longitude-latitude sphere >= " << result.x << ", " << result.y << ", " << result.z;
+
+	//	glm::vec3 fResult = glm::normalize(result.x * A + result.y * B + result.z * R);
+	//	std::cout << " => Rotationed if reflection vector is 010 >= " << fResult.x << ", " << fResult.y << ", " << fResult.z << "\n";
+	//}
+	//std::cout << "Sum x: " << tmp0 / h.N << ", Sum y: " << tmp1 / h.N << "\n";
+
 	return Scene::Init();
 }
 
@@ -433,6 +467,7 @@ void Scene1::Draw2ndPass()
 	}
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowBuffer", "shadowBufferMap");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "irradianceMap");
+	textureManager.ActivateTexture(floorObjMesh->GetShader(), "skydomeImage");
 
 	glm::mat4 diffuseObjToWorld = glm::translate(glm::vec3(-1.f, -1.f, 0.f)) * glm::scale(glm::vec3(2.f));
 	floorObjMesh->SendUniformFloatMatrix4("objToWorld", &diffuseObjToWorld[0][0]);

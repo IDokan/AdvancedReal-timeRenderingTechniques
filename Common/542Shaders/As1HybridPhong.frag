@@ -21,6 +21,7 @@ uniform sampler2D specularBuffer;
 uniform sampler2D shadowBufferSAT;
 uniform sampler2D shadowBufferMap;
 uniform sampler2D irradianceMap;
+uniform sampler2D skydomeImage;
 
 out vec4 outColor;
 
@@ -57,6 +58,7 @@ uniform int shadowMapSize;
 const vec2 invAtan = vec2(0.1591, 0.3183);
 const float PI = 3.1415926538;
 
+// Uniformly distributed random numbers by Hammersley rule.
 uniform HammersleyBlock
 {
 	float N;
@@ -154,20 +156,59 @@ vec3 GetIrradianceColor(vec3 n)
 	return texture(irradianceMap, equirectangularUV).xyz;
 }
 
+vec3 GetHDRColor(vec3 n)
+{
+	
+	vec2 equirectangularUV = vec2(atan(n.z, n.x), asin(n.y));
+	equirectangularUV *= invAtan;
+	equirectangularUV += 0.5f;
+
+	return texture(skydomeImage, equirectangularUV).xyz;
+}
+
+vec2 GetDistributionFloats(float e1, float e2, float a)
+{
+	// Phong BRDF
+	float theta = acos(pow(e2, 1/(a+1)));
+	return vec2(e1, theta / PI);
+}
+
+vec3 InverseLogitudeLatitudeSphereCoorinatesToVector(float u, float v)
+{
+	vec3 result;
+	result.x = cos(2 * PI * (0.5 - u)) * sin(PI * v);
+	result.y = sin(2 * PI * (0.5 - u)) * sin(PI * v);
+	result.z = cos(PI * v);
+
+	return result;
+}
+
 vec3 CalculateDirectionalLight()
 {
 	vec4 Kd = texture(diffuseBuffer, uv);
-	if(Kd.a < -400)
-	{
-		return Kd.xyz;
-	}
 
 	vec3 vertexNormal = normalize(texture(normalBuffer, uv).rgb);
 	vec3 view = normalize(cPos - texture(positionBuffer, uv).rgb);
 
-	vec3 lightVector = -lightDirection;
-	lightVector = normalize(lightVector);
-	vec3 reflection = 2*dot(vertexNormal, lightVector)*vertexNormal - lightVector;
+	vec3 reflection = 2*dot(vertexNormal, view)*vertexNormal - view;
+	vec3 A = normalize(vec3(-reflection.y, reflection.x, 0));
+	vec3 B = normalize(cross(reflection, A));
+
+	
+	// Choose N random directions light in vector according to probability p(wk) = D(H)
+	for(int i = 0; i < Hammersley.N; i++)
+	{
+		// I'm trying to debug it from the first Hammersley random number.
+			// If the first random number is -1 of the hemisphere, result is not wrong.
+		// distribution2 == (u, v) for which space????
+		vec2 distribution2 = GetDistributionFloats(Hammersley.tmp[i * 2], Hammersley.tmp[i * 2 + 1], Kd.a);
+		vec3 ZOrientedSampledLightInVectorFromSky = InverseLogitudeLatitudeSphereCoorinatesToVector(distribution2.x, distribution2.y);
+		vec3 lightIn = normalize(ZOrientedSampledLightInVectorFromSky.x * A + ZOrientedSampledLightInVectorFromSky.y * B + ZOrientedSampledLightInVectorFromSky.z * reflection);
+
+		// return ZOrientedSampledLightInVectorFromSky;
+		return GetHDRColor(lightIn);
+	}
+
 
 	vec3 lightDiffuse = Kd.xyz / PI * GetIrradianceColor(vertexNormal);
 	vec3 lightSpecular = vec3(0);//texture(specularBuffer, uv).rgb* pow(max(dot(view, reflection), 0), ns) * lightIntensity;
@@ -222,5 +263,4 @@ void main()
 	// color = s*color + (1-s)*intensityFog;
 	
 	outColor = vec4(color, texture(specularBuffer, uv).a);
-	outColor = vec4(Hammersley.tmp[0], Hammersley.tmp[1], 0, 1);
 }

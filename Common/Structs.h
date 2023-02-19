@@ -20,6 +20,6 @@ struct Hammersley{
 	const GLsizei GetBlockDataSize();
 	const float* GetData();
 
-	constexpr static float N = 1.f;
+	constexpr static float N = 20;
 	float hammersley[static_cast<int>(2 * N)+1];
 };

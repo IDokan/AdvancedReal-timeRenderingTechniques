@@ -27,10 +27,10 @@ Hammersley::Hammersley()
 			{
 				u += p;
 			}
-			float v = (k + 0.5f) / N;
-			hammersley[pos++] = u;
-			hammersley[pos++] = v;
 		}
+		float v = (k + 0.5f) / N;
+		hammersley[pos++] = u;
+		hammersley[pos++] = v;
 	}
 }
 
