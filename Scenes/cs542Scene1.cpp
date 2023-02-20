@@ -435,6 +435,7 @@ void Scene1::AddMembersToGUI()
 	MyImGUI::SetCentralMesh(centralMesh, mainObjMesh, &shouldReload, buf, &flip, &uvImportType, &calculateUVonCPU);
 	MyImGUI::SetHybridDebugging(&gbufferRenderTargetFlag, &depthWriteFlag, &isDrawDebugObjects);
 	MyImGUI::SetShadowReferences(&blurStrength, &bias, &nearDepth, &farDepth);
+	MyImGUI::SetBRDFReferences(&roughnessTest);
 }
 void Scene1::Draw2ndPass()
 {
@@ -468,6 +469,9 @@ void Scene1::Draw2ndPass()
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowBuffer", "shadowBufferMap");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "irradianceMap");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "skydomeImage");
+	glm::ivec2 imageSize = textureManager.GetTextureSize("skydomeImage");
+	floorObjMesh->SendUniformInt("skydomeImageWidth", _windowWidth);
+	floorObjMesh->SendUniformInt("skydomeImageHeight", _windowHeight);
 
 	glm::mat4 diffuseObjToWorld = glm::translate(glm::vec3(-1.f, -1.f, 0.f)) * glm::scale(glm::vec3(2.f));
 	floorObjMesh->SendUniformFloatMatrix4("objToWorld", &diffuseObjToWorld[0][0]);
@@ -495,6 +499,7 @@ void Scene1::Draw2ndPass()
 	floorObjMesh->SendUniformInt("blurStrength", blurStrength);
 	floorObjMesh->SendUniformInt("shadowMapSize", shadowBufferSize);
 	floorObjMesh->SendUniformBlockFloats(h.GetBlockName(), h.GetBlockDataSize(), h.GetData());
+	floorObjMesh->SendUniformFloat("roughnessTest", roughnessTest);
 
 
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());

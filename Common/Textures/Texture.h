@@ -15,6 +15,7 @@ End Header --------------------------------------------------------*/
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
 class Texture
 {
@@ -36,6 +37,9 @@ public:
 	GLuint GetHandle() const;
 
 	void Clear();
+
+	// (width, height)
+	glm::ivec2 GetTextureSize();
 
 private:
 	void SetupHdrTexture(const char* path, int textureNum);

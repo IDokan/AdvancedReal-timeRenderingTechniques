@@ -61,6 +61,10 @@ void Texture::SetupTexture(const char* path, int _textureNum, enum class Texture
 		if (pixels)	// If pixel data has no problem,
 		{
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, pixels);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 10);
+			glGenerateMipmap(GL_TEXTURE_2D);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
 			stbi_image_free(pixels);
 		}
@@ -133,6 +137,11 @@ GLuint Texture::GetHandle() const
 void Texture::Clear()
 {
 	glDeleteTextures(1, &textureHandle);
+}
+
+glm::ivec2 Texture::GetTextureSize()
+{
+	return glm::ivec2(width, height);
 }
 
 void Texture::SetupHdrTexture(const char* path, int textureNum)

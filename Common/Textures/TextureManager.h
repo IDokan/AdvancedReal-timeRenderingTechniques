@@ -32,6 +32,8 @@ public:
 	void ActivateImage(GLuint programID, std::string textureName, std::string activateName, GLenum access);
 
 	GLuint GetTextureHandle(std::string textureName);
+
+	glm::ivec2 GetTextureSize(std::string textureName);
 	
 	void Clear();
 private:

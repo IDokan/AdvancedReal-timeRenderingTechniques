@@ -54,6 +54,11 @@ uniform float bias;
 uniform int blurStrength;
 uniform int shadowMapSize;
 
+uniform int skydomeImageWidth;
+uniform int skydomeImageHeight;
+
+uniform float roughnessTest;
+
 
 const vec2 invAtan = vec2(0.1591, 0.3183);
 const float PI = 3.1415926538;
@@ -156,14 +161,47 @@ vec3 GetIrradianceColor(vec3 n)
 	return texture(irradianceMap, equirectangularUV).xyz;
 }
 
-vec3 GetHDRColor(vec3 n)
+int Characteristic(float d)
+{
+	if(d > 0)
+	{
+		return 1;
+	}
+	else return 0;
+}
+
+// roughness is alpha value
+float Distribution(vec3 half, vec3 normal, float roughness)
+{
+	return Characteristic(dot(half, normal)) * (roughness + 2) / (2 * PI) * pow(dot(half, normal), roughness);
+}
+
+vec3 FresnelReflection(float d, vec3 Ks)
+{
+	return Ks + (1 - Ks) * pow((1 - abs(d)), 5);
+}
+
+vec3 GetHDRColor(vec3 n, float distribution)
 {
 	
 	vec2 equirectangularUV = vec2(atan(n.z, n.x), asin(n.y));
 	equirectangularUV *= invAtan;
 	equirectangularUV += 0.5f;
 
-	return texture(skydomeImage, equirectangularUV).xyz;
+	float level = (0.5 * log2(1024 * 1024 / Hammersley.N) - (0.5*log2(distribution)));
+
+	return texture(skydomeImage, equirectangularUV, level).xyz;
+}
+
+vec3 G1(vec3 v1, vec3 v2)
+{
+	// Phong BRDF
+	
+}
+
+vec3 GFactor(vec3 view, vec3 half, vew3 reflection)
+{
+	return G1(view, half) * G1(reflection, half);
 }
 
 vec2 GetDistributionFloats(float e1, float e2, float a)
@@ -186,6 +224,7 @@ vec3 InverseLogitudeLatitudeSphereCoorinatesToVector(float u, float v)
 vec3 CalculateDirectionalLight()
 {
 	vec4 Kd = texture(diffuseBuffer, uv);
+	vec4 Ks = texture(specularBuffer, uv);
 
 	vec3 vertexNormal = normalize(texture(normalBuffer, uv).rgb);
 	vec3 view = normalize(cPos - texture(positionBuffer, uv).rgb);
@@ -205,13 +244,16 @@ vec3 CalculateDirectionalLight()
 		vec3 ZOrientedSampledLightInVectorFromSky = InverseLogitudeLatitudeSphereCoorinatesToVector(distribution2.x, distribution2.y);
 		vec3 lightIn = normalize(ZOrientedSampledLightInVectorFromSky.x * A + ZOrientedSampledLightInVectorFromSky.y * B + ZOrientedSampledLightInVectorFromSky.z * reflection);
 
+		vec3 half = normalize(view + lightIn);
+
 		// return ZOrientedSampledLightInVectorFromSky;
-		return GetHDRColor(lightIn);
+		float distribution = Distribution(half, vertexNormal, roughnessTest);
+		return FresnelReflection(dot(view, half), Ks.rgb) * GetHDRColor(lightIn, distribution);
 	}
 
 
 	vec3 lightDiffuse = Kd.xyz / PI * GetIrradianceColor(vertexNormal);
-	vec3 lightSpecular = vec3(0);//texture(specularBuffer, uv).rgb* pow(max(dot(view, reflection), 0), ns) * lightIntensity;
+	vec3 lightSpecular = vec3(0);//Ks.rgb * pow(max(dot(view, reflection), 0), ns) * lightIntensity;
 	lightSpecular.r = max(lightSpecular.r, 0);
 	lightSpecular.g = max(lightSpecular.g, 0);
 	lightSpecular.b = max(lightSpecular.b, 0);

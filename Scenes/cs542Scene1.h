@@ -237,6 +237,7 @@ private:
 	ObjectMesh* cubeObjMesh;
 
 	struct Hammersley h;
+	float roughnessTest;
 };
 
 #endif // CS542_SCENE1_H

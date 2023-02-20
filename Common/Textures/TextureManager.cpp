@@ -59,6 +59,11 @@ GLuint TextureManager::GetTextureHandle(std::string textureName)
 	return textures.find(textureName)->second.GetHandle();
 }
 
+glm::ivec2 TextureManager::GetTextureSize(std::string textureName)
+{
+	return textures.find(textureName)->second.GetTextureSize();
+}
+
 void TextureManager::Clear()
 {
 	for (auto t = textures.begin(); t != textures.end(); t++)

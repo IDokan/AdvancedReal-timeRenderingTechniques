@@ -67,6 +67,8 @@ namespace MyImGUI {
     float* nearDepth;
     float* farDepth;
 
+    float* roughnessTest;
+
     namespace Helper
     {
         void Normals();
@@ -97,6 +99,8 @@ namespace MyImGUI {
         void HybridRenders();
 
         void Shadows();
+
+        void BRDF();
 
 
         // Helper to display a little (?) mark which shows a tooltip when hovered.
@@ -157,6 +161,7 @@ void MyImGUI::UpdateImGUI()
     Helper::LightScenarios();
     Helper::HybridRenders();
     Helper::Shadows();
+    Helper::BRDF();
 
     // Shader selection is not disabled
     //Helper::Shaders();
@@ -241,6 +246,11 @@ void MyImGUI::SetShadowReferences(int* _blurStrength, float* _bias, float* _near
     bias = _bias;
     nearDepth = _nearDepth;
     farDepth = _farDepth;
+}
+
+void MyImGUI::SetBRDFReferences(float* _roughnessTest)
+{
+    roughnessTest = _roughnessTest;
 }
 
 void MyImGUI::Helper::MaterialSetup()
@@ -444,6 +454,14 @@ void MyImGUI::Helper::Shadows()
         ImGui::SliderFloat("Near Depth", nearDepth, -10.f, 100.f);
         ImGui::SliderFloat("Far Depth", farDepth, -10.f, 100.f);
         //ImGui::Checkbox("Show Blurred", showBlurred);
+    }
+}
+
+void MyImGUI::Helper::BRDF()
+{
+    if (ImGui::CollapsingHeader("BRDF"))
+    {
+        ImGui::SliderFloat("Roughness", roughnessTest, 1.f, 10000.f);
     }
 }
 
