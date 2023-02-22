@@ -18,6 +18,7 @@ in vec3 fragNormal;
 
 uniform vec3 diffuse;
 uniform vec3 specular;
+uniform float roughness;
 
 // Writing the output data into our GBuffer
 layout (location = 0) out vec4 positionBuffer;
@@ -31,5 +32,5 @@ void main()
 	normalBuffer.xyz = normalize(fragNormal);
 	diffuseBuffer = vec4(diffuse, 1);
 	
-	specularBuffer = vec4(specular, 1);
+	specularBuffer = vec4(specular, roughness);
 }

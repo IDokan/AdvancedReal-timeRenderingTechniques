@@ -30,7 +30,7 @@ void main()
 {
 	positionBuffer = fragPos;
 	normalBuffer.xyz = normalize(fragNormal);
-	diffuseBuffer = vec4(texture(diffuseTexture, fragUV).rgb, 1);
+	diffuseBuffer = vec4(pow(texture(diffuseTexture, fragUV).rgb, vec3(2.2)), 1);
 	
-	specularBuffer = vec4(texture(specularTexture, fragUV).rgb, 1);
+	specularBuffer = vec4(pow(texture(specularTexture, fragUV).rgb, vec3(2.2)), 1);
 }

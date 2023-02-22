@@ -30,5 +30,5 @@ namespace MyImGUI
     void SetCentralMesh(Mesh* mesh, ObjectMesh* mainObjMesh, bool* shouldReload, char* buf, bool* flip, Mesh::UVType* uvType, bool* calculateUVonCPU);
     void SetHybridDebugging(bool* ptrToGBufferRenderTargetFlag, bool* ptrToDepthWriteFlag, bool* ptrToisDrawDebugObjects);
     void SetShadowReferences(int* _blurStrength, float* _bias, float* _nearDepth, float* _farDepth);
-    void SetBRDFReferences(float* _roughnessTest);
+    void SetBRDFReferences(float* _exposure, float* _contrast, float* u, float* v);
 }

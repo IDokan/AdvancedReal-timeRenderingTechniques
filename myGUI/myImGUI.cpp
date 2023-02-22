@@ -67,7 +67,10 @@ namespace MyImGUI {
     float* nearDepth;
     float* farDepth;
 
-    float* roughnessTest;
+    float* exposure;
+    float* contrast;
+    float* u;
+    float* v;
 
     namespace Helper
     {
@@ -248,9 +251,12 @@ void MyImGUI::SetShadowReferences(int* _blurStrength, float* _bias, float* _near
     farDepth = _farDepth;
 }
 
-void MyImGUI::SetBRDFReferences(float* _roughnessTest)
+void MyImGUI::SetBRDFReferences(float* _exposure, float* _contrast, float*_u, float* _v)
 {
-    roughnessTest = _roughnessTest;
+    exposure = _exposure;
+    contrast = _contrast;
+    u = _u;
+    v = _v;
 }
 
 void MyImGUI::Helper::MaterialSetup()
@@ -461,7 +467,10 @@ void MyImGUI::Helper::BRDF()
 {
     if (ImGui::CollapsingHeader("BRDF"))
     {
-        ImGui::SliderFloat("Roughness", roughnessTest, 1.f, 10000.f);
+        ImGui::SliderFloat("Exposure", exposure, 0.1f, 50.f);
+        ImGui::SliderFloat("Contrast", contrast, 1.f, 10.f);
+        ImGui::SliderFloat("U", u, 0.f, 1.f);
+        ImGui::SliderFloat("V", v, 0.f, 1.f);
     }
 }
 

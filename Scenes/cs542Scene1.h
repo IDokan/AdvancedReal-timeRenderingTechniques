@@ -98,6 +98,7 @@ private:
 	std::vector<glm::mat4> sphereEnvironmentalMatrix;
 	std::vector<glm::vec3> sphereDiffuseColor;
 	std::vector<glm::vec3> sphereSpecularColor;
+	std::vector<float> sphereRoughness;
 
 private:
 	const GLuint vertexAttribute;
@@ -237,7 +238,9 @@ private:
 	ObjectMesh* cubeObjMesh;
 
 	struct Hammersley h;
-	float roughnessTest;
+
+	float exposure;
+	float contrast;
 };
 
 #endif // CS542_SCENE1_H

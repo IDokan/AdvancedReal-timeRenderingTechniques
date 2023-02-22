@@ -57,11 +57,11 @@ uniform int shadowMapSize;
 uniform int skydomeImageWidth;
 uniform int skydomeImageHeight;
 
-uniform float roughnessTest;
-
-
 const vec2 invAtan = vec2(0.1591, 0.3183);
 const float PI = 3.1415926538;
+
+uniform float exposure;
+uniform float contrast;
 
 // Uniformly distributed random numbers by Hammersley rule.
 uniform HammersleyBlock
@@ -157,8 +157,8 @@ vec3 GetIrradianceColor(vec3 n)
 	vec2 equirectangularUV = vec2(atan(n.z, n.x), asin(n.y));
 	equirectangularUV *= invAtan;
 	equirectangularUV += 0.5f;
-
-	return texture(irradianceMap, equirectangularUV).xyz;
+	
+	return pow(texture(irradianceMap, equirectangularUV).xyz, vec3(2.2));
 }
 
 int Characteristic(float d)
@@ -183,25 +183,45 @@ vec3 FresnelReflection(float d, vec3 Ks)
 
 vec3 GetHDRColor(vec3 n, float distribution)
 {
-	
 	vec2 equirectangularUV = vec2(atan(n.z, n.x), asin(n.y));
 	equirectangularUV *= invAtan;
 	equirectangularUV += 0.5f;
 
-	float level = (0.5 * log2(1024 * 1024 / Hammersley.N) - (0.5*log2(distribution)));
-
-	return texture(skydomeImage, equirectangularUV, level).xyz;
+	float level = (0.5 * log2(skydomeImageWidth * skydomeImageHeight / Hammersley.N) - (0.5*log2(distribution)));
+	
+	return pow(texture(skydomeImage, equirectangularUV, level).xyz, vec3(2.2));
 }
 
-vec3 G1(vec3 v1, vec3 v2)
+float G1(vec3 v1, vec3 v2, vec3 normal, float alpha)
 {
 	// Phong BRDF
-	
+	float vDotNormal = dot(v1, normal);
+	float result = Characteristic(dot(v1, v2) / vDotNormal);
+	if(vDotNormal > 1.0)
+	{
+		return 1.0f;
+	}
+
+	float tanThetaV = sqrt(1 - pow(vDotNormal, 2)) / vDotNormal;
+	if(tanThetaV <= 0.01f)
+	{
+		return 1.0f;
+	}
+
+	float a = sqrt(alpha / 2 + 1) / tanThetaV;
+	if(a < 1.6)
+	{
+		return result * ((3.535*a) + (2.181*a*a)) / (1.0 + (2.276*a) + (2.577*a*a));
+	}
+	else
+	{
+		return result;
+	}
 }
 
-vec3 GFactor(vec3 view, vec3 half, vew3 reflection)
+float GTermCalculationBRDF(vec3 view, vec3 reflection, vec3 normal, vec3 half, float roughness)
 {
-	return G1(view, half) * G1(reflection, half);
+	return G1(view, half, normal, roughness) * G1(reflection, half, normal, roughness);
 }
 
 vec2 GetDistributionFloats(float e1, float e2, float a)
@@ -234,6 +254,9 @@ vec3 CalculateDirectionalLight()
 	vec3 B = normalize(cross(reflection, A));
 
 	
+	
+	vec3 lightSpecular = vec3(0);
+
 	// Choose N random directions light in vector according to probability p(wk) = D(H)
 	for(int i = 0; i < Hammersley.N; i++)
 	{
@@ -247,16 +270,16 @@ vec3 CalculateDirectionalLight()
 		vec3 half = normalize(view + lightIn);
 
 		// return ZOrientedSampledLightInVectorFromSky;
-		float distribution = Distribution(half, vertexNormal, roughnessTest);
-		return FresnelReflection(dot(view, half), Ks.rgb) * GetHDRColor(lightIn, distribution);
+		float distribution = Distribution(half, vertexNormal, Ks.a);
+		lightSpecular += GetHDRColor(lightIn, distribution) * FresnelReflection(dot(view, half), Ks.rgb) * GTermCalculationBRDF(view, reflection, vertexNormal, half, Ks.a) / (4.f * dot(view, vertexNormal));
 	}
 
 
 	vec3 lightDiffuse = Kd.xyz / PI * GetIrradianceColor(vertexNormal);
-	vec3 lightSpecular = vec3(0);//Ks.rgb * pow(max(dot(view, reflection), 0), ns) * lightIntensity;
 	lightSpecular.r = max(lightSpecular.r, 0);
 	lightSpecular.g = max(lightSpecular.g, 0);
 	lightSpecular.b = max(lightSpecular.b, 0);
+	lightSpecular /= Hammersley.N;
 
 	vec3 intensityLocal = (lightDiffuse + lightSpecular);
 
@@ -304,5 +327,11 @@ void main()
 	// float s = (zFar - distanceView) / (zFar - zNear);
 	// color = s*color + (1-s)*intensityFog;
 	
+
+	// linear to sRGB
+	color = pow(color, vec3(1.0 / 2.2));
+	// tone mapping
+	color = pow((exposure * color) / ((exposure * color) + vec3(1, 1, 1)), vec3(contrast / 2.2));
+
 	outColor = vec4(color, texture(specularBuffer, uv).a);
 }

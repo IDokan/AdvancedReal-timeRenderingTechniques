@@ -13,12 +13,15 @@
 
 #version 430 core
 
-out vec4 color;
+out vec4 outColor;
 in vec3 localPos;
 
 uniform sampler2D equirectangularMap;
 
 const vec2 invAtan = vec2(0.1591, 0.3183);
+
+uniform float exposure;
+uniform float contrast;
 
 vec2 SampleSphericalMap(vec3 v)
 {
@@ -31,8 +34,9 @@ vec2 SampleSphericalMap(vec3 v)
 void main()
 {
 	vec2 uv = SampleSphericalMap(normalize(localPos));
-	vec3 mapColor = texture(equirectangularMap, uv, 0).rgb;
+	vec3 mapColor = pow(texture(equirectangularMap, uv, 0).rgb, vec3(2.2));
 
-	// color = vec4(uv, 0, 1);
-	color = vec4(mapColor, 1);
+	vec3 color = pow(mapColor, vec3(1.0 / 2.2));
+	color = pow((exposure * color) / ((exposure * color) + vec3(1, 1, 1)), vec3(contrast / 2.2));
+	outColor = vec4(color, 1);
 }
