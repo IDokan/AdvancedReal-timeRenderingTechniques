@@ -43,9 +43,6 @@ uniform vec3 intensityEmissive;
 uniform vec3 intensityFog;
 uniform vec3 attenuationConstants;
 
-	uniform vec3 lightIntensity;
-	uniform vec3 lightDirection;
-	
 uniform float nearDepth;
 uniform float farDepth;
 
@@ -178,7 +175,7 @@ float Distribution(vec3 half, vec3 normal, float roughness)
 
 vec3 FresnelReflection(float d, vec3 Ks)
 {
-	return Ks + (1 - Ks) * pow((1 - abs(d)), 5);
+	return Ks + (1 - Ks) * pow(clamp(1 - abs(d), 0.0, 1.0), 5.0);
 }
 
 vec3 GetHDRColor(vec3 n, float distribution)
@@ -189,7 +186,7 @@ vec3 GetHDRColor(vec3 n, float distribution)
 
 	float level = (0.5 * log2(skydomeImageWidth * skydomeImageHeight / Hammersley.N) - (0.5*log2(distribution)));
 	
-	return pow(texture(skydomeImage, equirectangularUV, level).xyz, vec3(2.2));
+	return pow(textureLod(skydomeImage, equirectangularUV, 0).xyz, vec3(2.2));
 }
 
 float G1(vec3 v1, vec3 v2, vec3 normal, float alpha)
@@ -228,7 +225,7 @@ vec2 GetDistributionFloats(float e1, float e2, float a)
 {
 	// Phong BRDF
 	float theta = acos(pow(e2, 1/(a+1)));
-	return vec2(e1, theta / PI);
+	return vec2(e1, (theta) / PI);
 }
 
 vec3 InverseLogitudeLatitudeSphereCoorinatesToVector(float u, float v)
@@ -253,8 +250,6 @@ vec3 CalculateDirectionalLight()
 	vec3 A = normalize(vec3(-reflection.y, reflection.x, 0));
 	vec3 B = normalize(cross(reflection, A));
 
-	
-	
 	vec3 lightSpecular = vec3(0);
 
 	// Choose N random directions light in vector according to probability p(wk) = D(H)
@@ -264,12 +259,11 @@ vec3 CalculateDirectionalLight()
 			// If the first random number is -1 of the hemisphere, result is not wrong.
 		// distribution2 == (u, v) for which space????
 		vec2 distribution2 = GetDistributionFloats(Hammersley.tmp[i * 2], Hammersley.tmp[i * 2 + 1], Kd.a);
+		return vec3(distribution2.xy, 0);
 		vec3 ZOrientedSampledLightInVectorFromSky = InverseLogitudeLatitudeSphereCoorinatesToVector(distribution2.x, distribution2.y);
+		// return ZOrientedSampledLightInVectorFromSky ;
 		vec3 lightIn = normalize(ZOrientedSampledLightInVectorFromSky.x * A + ZOrientedSampledLightInVectorFromSky.y * B + ZOrientedSampledLightInVectorFromSky.z * reflection);
-
 		vec3 half = normalize(view + lightIn);
-
-		// return ZOrientedSampledLightInVectorFromSky;
 		float distribution = Distribution(half, vertexNormal, Ks.a);
 		lightSpecular += GetHDRColor(lightIn, distribution) * FresnelReflection(dot(view, half), Ks.rgb) * GTermCalculationBRDF(view, reflection, vertexNormal, half, Ks.a) / (4.f * dot(view, vertexNormal));
 	}
@@ -317,7 +311,7 @@ vec3 CalculateDirectionalLight()
 
 void main()
 {
-	vec3 color = intensityEmissive + ambient;
+	vec3 color = vec3(0);
 
 	color += CalculateDirectionalLight();
 

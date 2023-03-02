@@ -445,6 +445,16 @@ void Scene1::InitGraphics()
 	sphereRoughness[7] = 5000.f;
 	sphereRoughness[8] = 10000.f;
 	sphereRoughness[9] = 50000.f;
+	sphereRoughness[0] = 1.f;
+	sphereRoughness[1] = 1.f;
+	sphereRoughness[2] = 1.f;
+	sphereRoughness[3] = 1.f;
+	sphereRoughness[4] = 1.f;
+	sphereRoughness[5] = 1.f;
+	sphereRoughness[6] = 1.f;
+	sphereRoughness[7] = 1.f;
+	sphereRoughness[8] = 1.f;
+	sphereRoughness[9] = 1.f;
 }
 
 void Scene1::AddMembersToGUI()
@@ -491,9 +501,9 @@ void Scene1::Draw2ndPass()
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowBuffer", "shadowBufferMap");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "irradianceMap");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "skydomeImage");
-	glm::ivec2 imageSize = textureManager.GetTextureSize("skydomeImage");
-	floorObjMesh->SendUniformInt("skydomeImageWidth", _windowWidth);
-	floorObjMesh->SendUniformInt("skydomeImageHeight", _windowHeight);
+	glm::ivec2 imageSize = textureManager.GetTextureSize("irradianceMap");
+	floorObjMesh->SendUniformInt("skydomeImageWidth", imageSize.x);
+	floorObjMesh->SendUniformInt("skydomeImageHeight", imageSize.y);
 
 	glm::mat4 diffuseObjToWorld = glm::translate(glm::vec3(-1.f, -1.f, 0.f)) * glm::scale(glm::vec3(2.f));
 	floorObjMesh->SendUniformFloatMatrix4("objToWorld", &diffuseObjToWorld[0][0]);
@@ -511,9 +521,6 @@ void Scene1::Draw2ndPass()
 	floorObjMesh->SendUniformFloat3("intensityEmissive", &intensityEmissive.x);
 	floorObjMesh->SendUniformFloat3("intensityFog", &intensityFog.x);
 	floorObjMesh->SendUniformFloat3("attenuationConstants", &attenuationConstants.x);
-
-	floorObjMesh->SendUniformFloat3("lightIntensity", lightManager.GetDirectionalLightIntensity());
-	floorObjMesh->SendUniformFloat3("lightDirection", lightManager.GetDirectionalLightDirection());
 
 	floorObjMesh->SendUniformFloat("nearDepth", nearDepth);
 	floorObjMesh->SendUniformFloat("farDepth", farDepth);
