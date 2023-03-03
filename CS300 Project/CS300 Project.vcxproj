@@ -260,6 +260,8 @@ xcopy /y /d "..\ThirdParty\assimp\lib\*.dll" "$(TargetDir)"</Command>
     <None Include="..\Common\542Shaders\As2SATVertical.comp" />
     <None Include="..\Common\542Shaders\As2ShadowPass.frag" />
     <None Include="..\Common\542Shaders\As2ShadowPass.vert" />
+    <None Include="..\Common\542Shaders\As3SkyboxRecorder.frag" />
+    <None Include="..\Common\542Shaders\As3SkyboxRecorder.vert" />
     <None Include="..\Common\542Shaders\As3Skydome.frag" />
     <None Include="..\Common\542Shaders\As3Skydome.vert" />
     <None Include="..\Common\ppms\black.ppm" />

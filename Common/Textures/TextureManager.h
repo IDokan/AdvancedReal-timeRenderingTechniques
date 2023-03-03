@@ -24,6 +24,8 @@ public:
 
 	void AddTexture(int width, int height, std::string textureName);
 
+	void AddCubeTexture(int width, int height, std::string textureName);
+
 	void ActivateTexture(GLuint programID, std::string activateName);
 
 	void ActivateTexture(GLuint programID, std::string textureName, std::string ActivateName);

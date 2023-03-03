@@ -34,6 +34,14 @@ void TextureManager::AddTexture(int width, int height, std::string textureName)
 	textures.insert(newTex);
 }
 
+void TextureManager::AddCubeTexture(int width, int height, std::string textureName)
+{
+	std::pair<std::string, Texture> newTex;
+	newTex.first = textureName;
+	newTex.second.SetupCubeTexture(width, height, textureSize++);
+	textures.insert(newTex);
+}
+
 void TextureManager::ActivateTexture(GLuint programID, std::string activateName)
 {
 	ActivateTexture(programID, activateName, activateName);

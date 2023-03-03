@@ -109,9 +109,14 @@ int Scene1::Init()
 
 	model = new Model("../Common/Meshes/models/Armadillo.ply");
 
+	InitGraphics();
+	skyboxFB.InitializeCubemap(&textureManager, "SkyCubeMap", 512, 512);
+
 	AddMembersToGUI();
 
 	LoadAllShaders();
+	RecordSkybox();
+	glViewport(0, 0, _windowWidth, _windowHeight);
 
 	InitLights();
 
@@ -120,47 +125,11 @@ int Scene1::Init()
 	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowSATSpare");
 	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowBlurred");
 
-	InitGraphics();
-
 	SetupCamera();
 
 	std::vector<std::string> textureNames{ "positionBuffer" , "normalBuffer" , "diffuseBuffer", "specularBuffer" };
 
 	frameBuffer.InitializeCustomBuffer(&textureManager, textureNames);
-
-	//glm::vec3 R = glm::vec3(0.f, 1.f, 0.f);
-	//glm::vec3 A = glm::normalize(glm::vec3(-R.y, R.x, 0));
-	//glm::vec3 B = glm::normalize(glm::cross(R, A));
-	//std::cout << "A: " << A.x << ", " << A.y << ", " << A.z << "\n";
-	//std::cout << "B: " << B.x << ", " << B.y << ", " << B.z << "\n";
-	//float tmp0 = 0.f, tmp1 = 0.f;
-	//for (size_t i = 0; i < static_cast<size_t>(h.N * 2 + 1); i++)
-	//{
-	//	if (i == 0)
-	//	{
-	//		continue;
-	//	}
-
-	//	float u = h.GetData()[i];
-	//	float v = h.GetData()[++i];
-	//	tmp0 += u;
-	//	tmp1 += v;
-	//	std::cout << u << ", " << v << " == ";
-	//	float u2 = u;
-	//	float v2 = acosf(std::powf(v, 1.f / (1.f + 1.f))) / glm::pi<float>();
-	//	std::cout << u2 << ", " << v2;
-
-
-	//	glm::vec3 result;
-	//	result.x = cos(2.f * glm::pi<float>() * (0.5f - u2)) * sin(glm::pi<float>() * v2);
-	//	result.y = sin(2.f * glm::pi<float>() * (0.5f - u2)) * sin(glm::pi<float>() * v2);
-	//	result.z = cos(glm::pi<float>() * v2);
-	//	std::cout << " => Longitude-latitude sphere >= " << result.x << ", " << result.y << ", " << result.z;
-
-	//	glm::vec3 fResult = glm::normalize(result.x * A + result.y * B + result.z * R);
-	//	std::cout << " => Rotationed if reflection vector is 010 >= " << fResult.x << ", " << fResult.y << ", " << fResult.z << "\n";
-	//}
-	//std::cout << "Sum x: " << tmp0 / h.N << ", Sum y: " << tmp1 / h.N << "\n";
 
 	return Scene::Init();
 }
@@ -202,6 +171,9 @@ void Scene1::LoadAllShaders()
 
 	skydomeShader = LoadShaders("../Common/542Shaders/As3Skydome.vert",
 		"../Common/542Shaders/As3Skydome.frag");
+
+	skyboxRecorderShader = LoadShaders("../Common/542shaders/As3SkyboxRecorder.vert",
+		"../Common/542shaders/As3SkyboxRecorder.frag");
 }
 
 int Scene1::preRender()
@@ -258,8 +230,7 @@ int Scene1::preRender()
 
 int Scene1::Render()
 {
-	HybridRendering();
-	//RenderSkydome();
+	 HybridRendering();
 
 	return 0;
 }
@@ -283,6 +254,8 @@ void Scene1::CleanUp()
 	glDeleteProgram(hybridLocalLights);
 	glDeleteProgram(shadowPass);
 	glDeleteProgram(skydomeShader);
+
+	glDeleteProgram(skyboxRecorderShader);
 
 
 	MyImGUI::ClearImGUI();
@@ -500,7 +473,7 @@ void Scene1::Draw2ndPass()
 	}
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowBuffer", "shadowBufferMap");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "irradianceMap");
-	textureManager.ActivateTexture(floorObjMesh->GetShader(), "skydomeImage");
+	textureManager.ActivateTexture(floorObjMesh->GetShader(), "SkyCubeMap");
 	glm::ivec2 imageSize = textureManager.GetTextureSize("irradianceMap");
 	floorObjMesh->SendUniformInt("skydomeImageWidth", imageSize.x);
 	floorObjMesh->SendUniformInt("skydomeImageHeight", imageSize.y);
@@ -530,6 +503,11 @@ void Scene1::Draw2ndPass()
 	floorObjMesh->SendUniformBlockFloats(h.GetBlockName(), h.GetBlockDataSize(), h.GetData());
 	floorObjMesh->SendUniformFloat("exposure", exposure);
 	floorObjMesh->SendUniformFloat("contrast", contrast);
+
+	glm::mat4 tmp1 = glm::rotate(glm::pi<float>() / 4, glm::vec3(0.f, 1.f, 0.f));
+	floorObjMesh->SendUniformFloatMatrix4("tmp1", &tmp1[0][0]);
+	glm::mat4 tmp2 = glm::rotate(glm::pi<float>() / 4, glm::vec3(1.f, 0.f, 0.f));
+	floorObjMesh->SendUniformFloatMatrix4("tmp2", &tmp2[0][0]);
 
 
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
@@ -1220,8 +1198,42 @@ void Scene1::RenderSkydome()
 	cubeObjMesh->SendUniformFloatMatrix4("mappingMatrix", &mappingMatrix[0][0]);
 	cubeObjMesh->SendUniformFloatMatrix4("objToWorld", &objToWorld[0][0]);
 	cubeObjMesh->SendUniformFloatMatrix4("worldToNDC", &worldToNDC[0][0]);
-	textureManager.ActivateTexture(cubeObjMesh->GetShader(), "skydomeImage", "equirectangularMap");
+	textureManager.ActivateTexture(cubeObjMesh->GetShader(), "SkyCubeMap");
 	cubeObjMesh->SendUniformFloat("exposure", exposure);
 	cubeObjMesh->SendUniformFloat("contrast", contrast);
 	cubeObjMesh->Draw(cubeMesh->getIndexBufferSize());
+}
+
+void Scene1::RecordSkybox()
+{
+
+
+	glm::mat4 mappingMatrix = glm::scale(glm::vec3(100.f)) * glm::translate(glm::vec3(-1.f));
+	glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1000.0f);
+	glm::mat4 captureViews[] =
+	{
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+	   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+	};
+
+
+	for (size_t i = 0; i < 6; i++)
+	{
+		skyboxFB.ApplyCubeFBO("SkyCubeMap", static_cast<int>(i));
+
+
+		cubeObjMesh->SetShader(skyboxRecorderShader);
+		cubeObjMesh->PrepareDrawing();
+		cubeObjMesh->SendUniformFloatMatrix4("view", &captureViews[i][0][0]);
+		cubeObjMesh->SendUniformFloatMatrix4("mapping", &mappingMatrix[0][0]);
+		cubeObjMesh->SendUniformFloatMatrix4("projection", &captureProjection[0][0]);
+		textureManager.ActivateTexture(cubeObjMesh->GetShader(), "skydomeImage");
+		cubeObjMesh->Draw(cubeMesh->getIndexBufferSize());
+	}
+
+	skyboxFB.RestoreDefaultFrameBuffer();
 }

@@ -29,8 +29,10 @@ public:
 	// textureNames sequence should be match with shader layout
 	void InitializeCustomBuffer(TextureManager* tManager, std::vector<std::string> textureNames);
 	void InitializeCustomBuffer(TextureManager* tManager, std::vector<std::string> textureNames, std::vector<std::pair<int, int>> textureResolution);
+	void InitializeCubemap(TextureManager* tManager, std::string cubeTextureName, int width, int height);
 	void AddTexture(std::string newTextureName);
 	void ApplyFBO();
+	void ApplyCubeFBO(std::string cubeMapName, int i);
 	void BindTexture(std::string textureName);
 	void RestoreDefaultFrameBuffer();
 	void Clear();

@@ -241,6 +241,10 @@ private:
 
 	float exposure;
 	float contrast;
+
+	FBO skyboxFB;
+	void RecordSkybox();
+	GLuint skyboxRecorderShader;
 };
 
 #endif // CS542_SCENE1_H

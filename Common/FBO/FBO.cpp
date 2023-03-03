@@ -29,7 +29,7 @@ void FBO::Initialize(TextureManager* tManager, std::string firstTextureName, glm
 
 	if (textureManager == nullptr)
 	{
-		std::cout << "Please pass valid textureManager" << std::endl; 
+		std::cout << "Please pass valid textureManager" << std::endl;
 	}
 
 	// Get handle to the FB Object
@@ -43,13 +43,13 @@ void FBO::Initialize(TextureManager* tManager, std::string firstTextureName, glm
 	glGenRenderbuffers(1, &depthRenderBuffer);
 	glBindRenderbuffer(GL_RENDERBUFFER, depthRenderBuffer);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, windowWidth, windowHeight);
-	
+
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRenderBuffer);
 
 	// Now add the "render target"
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
 		textureManager->GetTextureHandle(firstTextureName), 0);
-	
+
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		std::cout << "Framebuffer is incomplete!" << std::endl;
@@ -200,7 +200,44 @@ void FBO::InitializeCustomBuffer(TextureManager* tManager, std::vector<std::stri
 	}
 	glDrawBuffers(static_cast<GLsizei>(namesSize), drawBuffers);
 	delete[] drawBuffers;
-	
+
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		std::cout << "Framebuffer is incomplete!" << std::endl;
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void FBO::InitializeCubemap(TextureManager* tManager, std::string cubeTextureName, int width, int height)
+{
+	windowWidth = width;
+	windowHeight = height;
+
+	textureManager = tManager;
+
+	if (textureManager == nullptr)
+	{
+		std::cout << "Please pass valid textureManager" << std::endl;
+	}
+
+	// Get handle to the FB Object
+	glGenFramebuffers(1, &frameBufferHandle);
+	glBindFramebuffer(GL_FRAMEBUFFER, frameBufferHandle);
+
+	// Create a texture
+	textureManager->AddCubeTexture(width, height, cubeTextureName);
+
+	// Add Depth buffer
+	glGenRenderbuffers(1, &depthRenderBuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthRenderBuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRenderBuffer);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+		textureManager->GetTextureHandle(cubeTextureName), 0);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
@@ -224,7 +261,7 @@ void FBO::AddTexture(std::string newTextureName)
 void FBO::ApplyFBO()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, frameBufferHandle);
-	
+
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		std::cout << "Framebuffer is incomplete!" << std::endl;
@@ -236,7 +273,27 @@ void FBO::ApplyFBO()
 	glViewport(0, 0, windowWidth, windowHeight);
 	glClearColor(clearColor.x, clearColor.y, clearColor.z, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
+
+}
+
+void FBO::ApplyCubeFBO(std::string cubeMapName, int i)
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, frameBufferHandle);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+		textureManager->GetTextureHandle(cubeMapName), 0);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		std::cout << "Framebuffer is incomplete!" << std::endl;
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		return;
+	}
+
+	glViewport(0, 0, windowWidth, windowHeight);
+	glClearColor(clearColor.x, clearColor.y, clearColor.z, 1.f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void FBO::BindTexture(std::string textureName)

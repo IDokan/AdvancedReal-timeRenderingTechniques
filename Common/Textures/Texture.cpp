@@ -95,6 +95,30 @@ void Texture::SetupTexture(int width, int height, int _textureNum)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, emptyData.data());
 }
 
+void Texture::SetupCubeTexture(int width, int height, int _textureNum)
+{
+	this->width = width;
+	this->height = height;
+	textureNum = _textureNum;
+
+	glGenTextures(1, &textureHandle);
+
+	glActiveTexture(GL_TEXTURE0 + textureNum);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureHandle);
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	std::vector<float> emptyData(width * height * 4, 0);
+	for (size_t i = 0; i < 6; i++)
+	{
+		glTexImage2D(static_cast<GLenum>(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i), 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, emptyData.data());
+	}
+}
+
 void Texture::UpdateTexture(GLuint programID, const GLchar* name)
 {
 	if (textureNum < 0 )
@@ -107,7 +131,7 @@ void Texture::UpdateTexture(GLuint programID, const GLchar* name)
 	
 	// Textures
 	glActiveTexture(GL_TEXTURE0 + textureNum);
-	glBindTexture(GL_TEXTURE_2D, textureHandle);
+	//glBindTexture(GL_TEXTURE_2D, textureHandle);
 	
 	// Uniform sampler for texture unit 0
 	GLint texSamplerLoc = glGetUniformLocation(programID, name);

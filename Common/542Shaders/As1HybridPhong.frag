@@ -21,7 +21,7 @@ uniform sampler2D specularBuffer;
 uniform sampler2D shadowBufferSAT;
 uniform sampler2D shadowBufferMap;
 uniform sampler2D irradianceMap;
-uniform sampler2D skydomeImage;
+uniform samplerCube SkyCubeMap;
 
 out vec4 outColor;
 
@@ -59,6 +59,10 @@ const float PI = 3.1415926538;
 
 uniform float exposure;
 uniform float contrast;
+
+uniform mat4 tmp1;
+uniform mat4 tmp2;
+
 
 // Uniformly distributed random numbers by Hammersley rule.
 uniform HammersleyBlock
@@ -170,7 +174,10 @@ int Characteristic(float d)
 // roughness is alpha value
 float Distribution(vec3 half, vec3 normal, float roughness)
 {
-	return Characteristic(dot(half, normal)) * (roughness + 2) / (2 * PI) * pow(dot(half, normal), roughness);
+	float dotResult = dot(half, normal);
+	float tanThetaM = sqrt((1.0 - pow(dotResult, 2))) / dotResult;
+	float roughnessSquared = pow(roughness, 2);
+	return Characteristic(dotResult) * (roughnessSquared) / (PI * pow(dotResult, 4) * pow(roughnessSquared + pow(tanThetaM, 2), 2));
 }
 
 vec3 FresnelReflection(float d, vec3 Ks)
@@ -180,13 +187,9 @@ vec3 FresnelReflection(float d, vec3 Ks)
 
 vec3 GetHDRColor(vec3 n, float distribution)
 {
-	vec2 equirectangularUV = vec2(atan(n.z, n.x), asin(n.y));
-	equirectangularUV *= invAtan;
-	equirectangularUV += 0.5f;
-
 	float level = (0.5 * log2(skydomeImageWidth * skydomeImageHeight / Hammersley.N) - (0.5*log2(distribution)));
 	
-	return pow(textureLod(skydomeImage, equirectangularUV, 0).xyz, vec3(2.2));
+	return pow(textureLod(SkyCubeMap, normalize(n), 0).xyz, vec3(2.2));
 }
 
 float G1(vec3 v1, vec3 v2, vec3 normal, float alpha)
@@ -214,6 +217,8 @@ float G1(vec3 v1, vec3 v2, vec3 normal, float alpha)
 	{
 		return result;
 	}
+
+	return result * (2 / (1 + sqrt(1 + (pow(alpha, 2) * pow(tanThetaV, 2)))));
 }
 
 float GTermCalculationBRDF(vec3 view, vec3 reflection, vec3 normal, vec3 half, float roughness)
@@ -224,7 +229,8 @@ float GTermCalculationBRDF(vec3 view, vec3 reflection, vec3 normal, vec3 half, f
 vec2 GetDistributionFloats(float e1, float e2, float a)
 {
 	// Phong BRDF
-	float theta = acos(pow(e2, 1/(a+1)));
+	e2 = abs(e2 - 0.5) * 2;
+	float theta = atan(a * sqrt(e2) / sqrt(1 - e2));
 	return vec2(e1, (theta) / PI);
 }
 
@@ -246,9 +252,9 @@ vec3 CalculateDirectionalLight()
 	vec3 vertexNormal = normalize(texture(normalBuffer, uv).rgb);
 	vec3 view = normalize(cPos - texture(positionBuffer, uv).rgb);
 
-	vec3 reflection = 2*dot(vertexNormal, view)*vertexNormal - view;
-	vec3 A = normalize(vec3(-reflection.y, reflection.x, 0));
-	vec3 B = normalize(cross(reflection, A));
+	vec3 reflection = normalize(2*dot(vertexNormal, view)*vertexNormal - view);
+	vec3 A = (tmp1 * vec4(reflection, 0)).xyz;
+	vec3 B = (tmp2 * vec4(reflection, 0)).xyz;
 
 	vec3 lightSpecular = vec3(0);
 
@@ -259,12 +265,13 @@ vec3 CalculateDirectionalLight()
 			// If the first random number is -1 of the hemisphere, result is not wrong.
 		// distribution2 == (u, v) for which space????
 		vec2 distribution2 = GetDistributionFloats(Hammersley.tmp[i * 2], Hammersley.tmp[i * 2 + 1], Kd.a);
-		return vec3(distribution2.xy, 0);
-		vec3 ZOrientedSampledLightInVectorFromSky = InverseLogitudeLatitudeSphereCoorinatesToVector(distribution2.x, distribution2.y);
-		// return ZOrientedSampledLightInVectorFromSky ;
+		vec3 ZOrientedSampledLightInVectorFromSky = normalize(InverseLogitudeLatitudeSphereCoorinatesToVector(distribution2.x, distribution2.y));
+		// return vec3(abs(ZOrientedSampledLightInVectorFromSky));
 		vec3 lightIn = normalize(ZOrientedSampledLightInVectorFromSky.x * A + ZOrientedSampledLightInVectorFromSky.y * B + ZOrientedSampledLightInVectorFromSky.z * reflection);
+		// return abs(lightIn);
 		vec3 half = normalize(view + lightIn);
 		float distribution = Distribution(half, vertexNormal, Ks.a);
+		// return GetHDRColor(lightIn, distribution) ;
 		lightSpecular += GetHDRColor(lightIn, distribution) * FresnelReflection(dot(view, half), Ks.rgb) * GTermCalculationBRDF(view, reflection, vertexNormal, half, Ks.a) / (4.f * dot(view, vertexNormal));
 	}
 
@@ -314,9 +321,8 @@ void main()
 	vec3 color = vec3(0);
 
 	color += CalculateDirectionalLight();
-
-
-	
+	// outColor = vec4(color, 1);
+	// return;
 	// float distanceView = texture(diffuseBuffer, uv).a;
 	// float s = (zFar - distanceView) / (zFar - zNear);
 	// color = s*color + (1-s)*intensityFog;

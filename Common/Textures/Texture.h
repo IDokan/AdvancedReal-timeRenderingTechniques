@@ -30,6 +30,7 @@ public:
 	~Texture();
 	void SetupTexture(const char* path, int textureNum, enum class TextureType tType);
 	void SetupTexture(int width, int height, int textureNum);
+	void SetupCubeTexture(int width, int height, int textureNum);
 
 	void UpdateTexture(GLuint programID, const GLchar* name);
 	void UpdateImage(GLuint programID, const GLchar* name, GLenum access);

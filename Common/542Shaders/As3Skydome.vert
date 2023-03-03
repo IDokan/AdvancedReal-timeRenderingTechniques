@@ -25,4 +25,5 @@ void main()
 {
 	localPos = (mappingMatrix * vec4(objPosition, 1.0f)).xyz;
 	gl_Position = (worldToNDC * objToWorld * vec4(localPos, 1.0f));
+	localPos = normalize(localPos);
 }
