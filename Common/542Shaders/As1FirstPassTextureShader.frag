@@ -26,11 +26,13 @@ layout (location = 3) out vec4 specularBuffer;		// a value is alpha
 uniform sampler2D diffuseTexture;
 uniform sampler2D specularTexture;
 
+uniform float roughness;
+
 void main()
 {
 	positionBuffer = fragPos;
 	normalBuffer.xyz = normalize(fragNormal);
 	diffuseBuffer = vec4(pow(texture(diffuseTexture, fragUV).rgb, vec3(2.2)), 1);
 	
-	specularBuffer = vec4(pow(texture(specularTexture, fragUV).rgb, vec3(2.2)), 1);
+	specularBuffer = vec4(pow(texture(specularTexture, fragUV).rgb, vec3(2.2)), roughness);
 }

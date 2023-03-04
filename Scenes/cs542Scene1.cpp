@@ -37,7 +37,7 @@ Scene1::Scene1(int width, int height)
 	angleOfRotate(0), vertexNormalFlag(false), faceNormalFlag(false),
 	oldX(0.f), oldY(0.f), cameraMovementOffset(0.004f), shouldReload(false), buf("../Common/Meshes/models/bunny.obj"), flip(false), uvImportType(Mesh::UVType::CUBE_MAPPED_UV),
 	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), shadowBufferSize(1024), blurStrength(0), bias(0.001f),
-	cubePath("../Common/Meshes/models/cube.obj"), exposure(1.f), contrast(1.f)
+	cubePath("../Common/Meshes/models/cube.obj"), exposure(1.f), contrast(1.f), roughness(0.001f)
 {
 	sphereMesh = new Mesh();
 	centralMesh = new Mesh();
@@ -71,7 +71,7 @@ Scene1::Scene1(int width, int height)
 	relativeUp = Vector(0.f, 1.f, 0.f);
 
 	ambient = glm::vec3(0.1f);
-	diffuse = glm::vec3(1.f);
+	diffuse = glm::vec3(0.5f);
 	specular = glm::vec3(0.3f);
 	ns = 1.f;
 	intensityEmissive = glm::vec3(0.04f);
@@ -193,7 +193,7 @@ int Scene1::preRender()
 		glm::rotate(handlerDisplacement.y * displacementToPi, glm::vec3(1.f, 0.f, 0.f)) *
 		glm::scale(scaleVector) * centralMesh->calcAdjustBoundingBoxMatrix();
 	modelMatrix = 
-		glm::rotate(180.f * displacementToPi, glm::vec3(0.f, 1.f, 0.f)) *
+		// glm::rotate(180.f * displacementToPi, glm::vec3(0.f, 1.f, 0.f)) *
 		glm::scale(scaleVector) * model->CalcAdjustBoundingBoxMatrix();
 	floorMatrix = glm::translate(glm::vec3(0.f, -1.f, 0.f)) * glm::rotate(glm::half_pi<float>(), glm::vec3(-1.f, 0.f, 0.f)) * glm::scale(glm::vec3(10.f, 10.f, 1.f)) * floorMesh->calcAdjustBoundingBoxMatrix();
 
@@ -352,50 +352,40 @@ void Scene1::InitGraphics()
 	sphereOrbit->Init(orbitMesh->getVertexBufferSize(), orbitMesh->getVertexBuffer());
 
 	sphereEnvironmentalMatrix.resize(sphereEnvironmentalSize);
-	sphereEnvironmentalMatrix[0] = glm::translate(glm::vec3(7.f, 1.f, 7.f)) * glm::scale(glm::vec3(1.f));
-	sphereEnvironmentalMatrix[1] = glm::translate(glm::vec3(4.f, 0.5f, 3.f)) * glm::scale(glm::vec3(0.5f));
-	sphereEnvironmentalMatrix[2] = glm::translate(glm::vec3(5.f, 2.f, -0.5f)) * glm::scale(glm::vec3(2.f));
-	sphereEnvironmentalMatrix[3] = glm::translate(glm::vec3(-3.2f, 0.25f, 0.f)) * glm::scale(glm::vec3(0.25f));
-	sphereEnvironmentalMatrix[4] = glm::translate(glm::vec3(1.f, 1.8f, 5.5f)) * glm::scale(glm::vec3(1.6f));
-	sphereEnvironmentalMatrix[5] = glm::translate(glm::vec3(-4.5f, 1.f, -4.8f)) * glm::scale(glm::vec3(1.f));
-	sphereEnvironmentalMatrix[6] = glm::translate(glm::vec3(-2.f, 0.85f, 2.5f)) * glm::scale(glm::vec3(0.85f));
-	sphereEnvironmentalMatrix[7] = glm::translate(glm::vec3(-6.f, 1.2f, -8.5f)) * glm::scale(glm::vec3(1.2f));
-	sphereEnvironmentalMatrix[8] = glm::translate(glm::vec3(6.f, 2.f, -7.f)) * glm::scale(glm::vec3(2.f));
-	sphereEnvironmentalMatrix[9] = glm::translate(glm::vec3(2.f, 0.9f, -2.f)) * glm::scale(glm::vec3(0.9f));
+	sphereEnvironmentalMatrix[0] = glm::translate(glm::vec3(-7.f, 1.f, 7.f)) * glm::scale(glm::vec3(1.f));
+	sphereEnvironmentalMatrix[1] = glm::translate(glm::vec3(-4.f, 0.5f, 3.f)) * glm::scale(glm::vec3(0.5f));
+	sphereEnvironmentalMatrix[2] = glm::translate(glm::vec3(-5.f, 2.f, -0.5f)) * glm::scale(glm::vec3(2.f));
+	sphereEnvironmentalMatrix[3] = glm::translate(glm::vec3(3.2f, 0.25f, 0.f)) * glm::scale(glm::vec3(0.25f));
+	sphereEnvironmentalMatrix[4] = glm::translate(glm::vec3(3.8f, 1.8f, 5.5f)) * glm::scale(glm::vec3(1.6f));
+	sphereEnvironmentalMatrix[5] = glm::translate(glm::vec3(4.5f, 1.f, -4.8f)) * glm::scale(glm::vec3(1.f));
+	sphereEnvironmentalMatrix[6] = glm::translate(glm::vec3(2.f, 0.85f, 2.5f)) * glm::scale(glm::vec3(0.85f));
+	sphereEnvironmentalMatrix[7] = glm::translate(glm::vec3(-6.f, 1.2f, 8.5f)) * glm::scale(glm::vec3(1.2f));
+	sphereEnvironmentalMatrix[8] = glm::translate(glm::vec3(-6.f, 2.f, -7.f)) * glm::scale(glm::vec3(2.f));
+	sphereEnvironmentalMatrix[9] = glm::translate(glm::vec3(-2.f, 0.9f, -2.f)) * glm::scale(glm::vec3(0.9f));
 
 	sphereDiffuseColor.resize(sphereEnvironmentalSize);
-	//sphereDiffuseColor[0] = glm::vec3(1.f, 0.f, 0.f);
-	//sphereDiffuseColor[1] = glm::vec3(0.f, 1.f, 0.f);
-	//sphereDiffuseColor[2] = glm::vec3(0.f, 0.f, 1.f);
-	//sphereDiffuseColor[3] = glm::vec3(0.7f, 0.f, 0.f);
-	//sphereDiffuseColor[4] = glm::vec3(0.5f, 0.8f, 0.25f);
-	//sphereDiffuseColor[5] = glm::vec3(0.f, 0.f, 0.7f);
-	//sphereDiffuseColor[6] = glm::vec3(1.f, 0.6f, 0.f);
-	//sphereDiffuseColor[7] = glm::vec3(0.f, 1.f, 0.6f);
-	//sphereDiffuseColor[8] = glm::vec3(0.6f, 0.f, 1.f);
-	//sphereDiffuseColor[9] = glm::vec3(0.1f, 0.1f, 0.1f);
-	sphereDiffuseColor[0] = glm::vec3(0.f);
-	sphereDiffuseColor[1] = glm::vec3(0.f);
-	sphereDiffuseColor[2] = glm::vec3(0.f);
-	sphereDiffuseColor[3] = glm::vec3(0.f);
-	sphereDiffuseColor[4] = glm::vec3(0.f);
-	sphereDiffuseColor[5] = glm::vec3(0.f);
-	sphereDiffuseColor[6] = glm::vec3(0.f);
-	sphereDiffuseColor[7] = glm::vec3(0.f);
-	sphereDiffuseColor[8] = glm::vec3(0.f);
-	sphereDiffuseColor[9] = glm::vec3(0.f);
+	sphereDiffuseColor[0] = glm::vec3(1.f, 0.f, 0.f);
+	sphereDiffuseColor[1] = glm::vec3(1.f, 0.f, 0.f);
+	sphereDiffuseColor[2] = glm::vec3(0.f, 1.f, 0.f);
+	sphereDiffuseColor[3] = glm::vec3(0.f, 1.f, 0.f);
+	sphereDiffuseColor[4] = glm::vec3(0.f, 0.f, 1.f);
+	sphereDiffuseColor[5] = glm::vec3(0.f, 0.f, 1.f);
+	sphereDiffuseColor[6] = glm::vec3(1.f, 1.f, 0.f);
+	sphereDiffuseColor[7] = glm::vec3(1.f, 1.f, 0.f);
+	sphereDiffuseColor[8] = glm::vec3(1.f, 1.f, 1.f);
+	sphereDiffuseColor[9] = glm::vec3(1.f, 1.f, 1.f);
+	//sphereDiffuseColor[0] = glm::vec3(0.f);
+	//sphereDiffuseColor[1] = glm::vec3(0.f);
+	//sphereDiffuseColor[2] = glm::vec3(0.f);
+	//sphereDiffuseColor[3] = glm::vec3(0.f);
+	//sphereDiffuseColor[4] = glm::vec3(0.f);
+	//sphereDiffuseColor[5] = glm::vec3(0.f);
+	//sphereDiffuseColor[6] = glm::vec3(0.f);
+	//sphereDiffuseColor[7] = glm::vec3(0.f);
+	//sphereDiffuseColor[8] = glm::vec3(0.f);
+	//sphereDiffuseColor[9] = glm::vec3(0.f);
 
 	sphereSpecularColor.resize(sphereEnvironmentalSize);
-	//sphereSpecularColor[0] = glm::vec3(0.f, 0.f, 0.f);
-	//sphereSpecularColor[1] = glm::vec3(0.f, 0.f, 0.f);
-	//sphereSpecularColor[2] = glm::vec3(0.f, 0.f, 0.f);
-	//sphereSpecularColor[3] = glm::vec3(0.3f, 0.f, 0.f);
-	//sphereSpecularColor[4] = glm::vec3(0.1f, 0.3f, 0.1f);
-	//sphereSpecularColor[5] = glm::vec3(0.f, 0.f, 0.3f);
-	//sphereSpecularColor[6] = glm::vec3(0.2f, 0.1f, 0.f);
-	//sphereSpecularColor[7] = glm::vec3(0.f, 0.2f, 0.1f);
-	//sphereSpecularColor[8] = glm::vec3(0.1f, 0.f, 0.2f);
-	//sphereSpecularColor[9] = glm::vec3(1.f, 1.f, 0.f);
 	sphereSpecularColor[0] = glm::vec3(1.f, 0.f, 0.f);
 	sphereSpecularColor[1] = glm::vec3(1.f, 0.f, 0.f);
 	sphereSpecularColor[2] = glm::vec3(0.f, 1.f, 0.f);
@@ -406,28 +396,38 @@ void Scene1::InitGraphics()
 	sphereSpecularColor[7] = glm::vec3(1.f, 1.f, 0.f);
 	sphereSpecularColor[8] = glm::vec3(1.f, 1.f, 1.f);
 	sphereSpecularColor[9] = glm::vec3(1.f, 1.f, 1.f);
+	//sphereSpecularColor[0] = glm::vec3(1.f, 0.f, 0.f);
+	//sphereSpecularColor[1] = glm::vec3(1.f);
+	//sphereSpecularColor[2] = glm::vec3(0.f, 1.f, 0.f);
+	//sphereSpecularColor[3] = glm::vec3(1.f);
+	//sphereSpecularColor[4] = glm::vec3(0.f, 0.f, 1.f);
+	//sphereSpecularColor[5] = glm::vec3(1.f);
+	//sphereSpecularColor[6] = glm::vec3(1.f, 1.f, 0.f);
+	//sphereSpecularColor[7] = glm::vec3(1.f);
+	//sphereSpecularColor[8] = glm::vec3(1.f, 1.f, 1.f);
+	//sphereSpecularColor[9] = glm::vec3(1.f);
 
 	sphereRoughness.resize(sphereEnvironmentalSize);
 	sphereRoughness[0] = 1.f;
-	sphereRoughness[1] = 5.f;
-	sphereRoughness[2] = 10.f;
-	sphereRoughness[3] = 50.f;
-	sphereRoughness[4] = 100.f;
-	sphereRoughness[5] = 500.f;
-	sphereRoughness[6] = 1000.f;
-	sphereRoughness[7] = 5000.f;
-	sphereRoughness[8] = 10000.f;
-	sphereRoughness[9] = 50000.f;
-	sphereRoughness[0] = 1.f;
-	sphereRoughness[1] = 1.f;
-	sphereRoughness[2] = 1.f;
-	sphereRoughness[3] = 1.f;
-	sphereRoughness[4] = 1.f;
-	sphereRoughness[5] = 1.f;
-	sphereRoughness[6] = 1.f;
-	sphereRoughness[7] = 1.f;
-	sphereRoughness[8] = 1.f;
-	sphereRoughness[9] = 1.f;
+	sphereRoughness[1] = 0.8f;
+	sphereRoughness[2] = 0.4f;
+	sphereRoughness[3] = 0.3f;
+	sphereRoughness[4] = 0.2f;
+	sphereRoughness[5] = 0.1f;
+	sphereRoughness[6] = 0.05f;
+	sphereRoughness[7] = 0.01f;
+	sphereRoughness[8] = 0.005f;
+	sphereRoughness[9] = 0.001f;
+	//sphereRoughness[0] = 1.f;
+	//sphereRoughness[1] = 1.f;
+	//sphereRoughness[2] = 1.f;
+	//sphereRoughness[3] = 1.f;
+	//sphereRoughness[4] = 1.f;
+	//sphereRoughness[5] = 1.f;
+	//sphereRoughness[6] = 1.f;
+	//sphereRoughness[7] = 1.f;
+	//sphereRoughness[8] = 1.f;
+	//sphereRoughness[9] = 1.f;
 }
 
 void Scene1::AddMembersToGUI()
@@ -440,7 +440,7 @@ void Scene1::AddMembersToGUI()
 	MyImGUI::SetCentralMesh(centralMesh, mainObjMesh, &shouldReload, buf, &flip, &uvImportType, &calculateUVonCPU);
 	MyImGUI::SetHybridDebugging(&gbufferRenderTargetFlag, &depthWriteFlag, &isDrawDebugObjects);
 	MyImGUI::SetShadowReferences(&blurStrength, &bias, &nearDepth, &farDepth);
-	MyImGUI::SetBRDFReferences(&exposure, &contrast, &h.hammersley[1], &h.hammersley[2]);
+	MyImGUI::SetBRDFReferences(&exposure, &contrast, &h.hammersley[1], &h.hammersley[2], &roughness);
 }
 void Scene1::Draw2ndPass()
 {
@@ -474,6 +474,7 @@ void Scene1::Draw2ndPass()
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowBuffer", "shadowBufferMap");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "irradianceMap");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "SkyCubeMap");
+	textureManager.ActivateTexture(floorObjMesh->GetShader(), "skydomeImage", "equirectangularMap");
 	glm::ivec2 imageSize = textureManager.GetTextureSize("irradianceMap");
 	floorObjMesh->SendUniformInt("skydomeImageWidth", imageSize.x);
 	floorObjMesh->SendUniformInt("skydomeImageHeight", imageSize.y);
@@ -594,6 +595,7 @@ void Scene1::Draw1stPass()
 	floorObjMesh->SendUniformFloatMatrix4("worldToNDC", &worldToNDC[0][0]);
 	textureManager.ActivateTexture(hybridTextureFirstPass, "diffuseTexture");
 	textureManager.ActivateTexture(hybridTextureFirstPass, "specularTexture");
+	floorObjMesh->SendUniformFloat("roughness", roughness);
 
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
@@ -604,6 +606,7 @@ void Scene1::Draw1stPass()
 	assimpHybridFirstPass->SendUniformFloatMatrix4("worldToNDC", &worldToNDC[0][0]);
 	assimpHybridFirstPass->SendUniformFloat3("diffuse", &diffuse[0]);
 	assimpHybridFirstPass->SendUniformFloat3("specular", &specular[0]);
+	assimpHybridFirstPass->SendUniformFloat("roughness", roughness);
 	model->Draw(hybridFirstPass);
 
 	DrawEnvironmentalObjects();
@@ -1234,6 +1237,10 @@ void Scene1::RecordSkybox()
 		textureManager.ActivateTexture(cubeObjMesh->GetShader(), "skydomeImage");
 		cubeObjMesh->Draw(cubeMesh->getIndexBufferSize());
 	}
+
+	textureManager.ActivateTexture(cubeObjMesh->GetShader(), "SkyCubeMap");
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, 10);
+	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
 	skyboxFB.RestoreDefaultFrameBuffer();
 }

@@ -245,6 +245,7 @@ private:
 	FBO skyboxFB;
 	void RecordSkybox();
 	GLuint skyboxRecorderShader;
+	float roughness;
 };
 
 #endif // CS542_SCENE1_H
