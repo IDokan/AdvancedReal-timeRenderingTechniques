@@ -62,6 +62,17 @@ void TextureManager::ActivateImage(GLuint programID, std::string textureName, st
 	textures.find(textureName)->second.UpdateImage(programID, activateName.c_str(), access);
 }
 
+void TextureManager::CopyTexture(std::string newTextureName, std::string oldTextureName)
+{
+	const Texture& oldTex = textures.find(oldTextureName)->second;
+	glBindTexture(GL_TEXTURE_2D, oldTex.GetHandle());
+	glm::ivec2 texSize = oldTex.GetTextureSize();
+	std::pair<std::string, Texture> newTex;
+	newTex.first = newTextureName;
+	newTex.second.CopyTexture(texSize.x, texSize.y, textureSize++, oldTex.GetHandle());
+	textures.insert(newTex);
+}
+
 GLuint TextureManager::GetTextureHandle(std::string textureName)
 {
 	return textures.find(textureName)->second.GetHandle();

@@ -119,6 +119,26 @@ void Texture::SetupCubeTexture(int width, int height, int _textureNum)
 	}
 }
 
+void Texture::CopyTexture(int width, int height, int _textureNum, GLuint copiedTextureHandle)
+{
+	this->width = width;
+	this->height = height;
+	textureNum = _textureNum;
+
+	glGenTextures(1, &textureHandle);
+
+	glActiveTexture(GL_TEXTURE0 + textureNum);
+	glBindTexture(GL_TEXTURE_2D, textureHandle);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
+	glCopyImageSubData(copiedTextureHandle, GL_TEXTURE_2D, 0, 0, 0, 0, textureHandle, GL_TEXTURE_2D, 0, 0, 0, 0, width, height, 1);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 void Texture::UpdateTexture(GLuint programID, const GLchar* name)
 {
 	if (textureNum < 0 )
@@ -163,7 +183,7 @@ void Texture::Clear()
 	glDeleteTextures(1, &textureHandle);
 }
 
-glm::ivec2 Texture::GetTextureSize()
+glm::ivec2 Texture::GetTextureSize() const
 {
 	return glm::ivec2(width, height);
 }

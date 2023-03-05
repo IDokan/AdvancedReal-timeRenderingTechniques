@@ -31,6 +31,7 @@ public:
 	void SetupTexture(const char* path, int textureNum, enum class TextureType tType);
 	void SetupTexture(int width, int height, int textureNum);
 	void SetupCubeTexture(int width, int height, int textureNum);
+	void CopyTexture(int width, int height, int textureNum, GLuint copiedTextureHandle);
 
 	void UpdateTexture(GLuint programID, const GLchar* name);
 	void UpdateImage(GLuint programID, const GLchar* name, GLenum access);
@@ -40,7 +41,7 @@ public:
 	void Clear();
 
 	// (width, height)
-	glm::ivec2 GetTextureSize();
+	glm::ivec2 GetTextureSize() const;
 
 private:
 	void SetupHdrTexture(const char* path, int textureNum);

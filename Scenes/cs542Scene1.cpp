@@ -37,7 +37,7 @@ Scene1::Scene1(int width, int height)
 	angleOfRotate(0), vertexNormalFlag(false), faceNormalFlag(false),
 	oldX(0.f), oldY(0.f), cameraMovementOffset(0.004f), shouldReload(false), buf("../Common/Meshes/models/bunny.obj"), flip(false), uvImportType(Mesh::UVType::CUBE_MAPPED_UV),
 	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), shadowBufferSize(1024), blurStrength(0), bias(0.001f),
-	cubePath("../Common/Meshes/models/cube.obj"), exposure(1.f), contrast(1.f), roughness(0.001f)
+	cubePath("../Common/Meshes/models/cube.obj"), exposure(1.f), contrast(1.f), roughness(0.001f), irradianceMapWidth(2048), irradianceMapHeight(1024)
 {
 	sphereMesh = new Mesh();
 	centralMesh = new Mesh();
@@ -112,9 +112,29 @@ int Scene1::Init()
 	InitGraphics();
 	skyboxFB.InitializeCubemap(&textureManager, "SkyCubeMap", 512, 512);
 
+	textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection00");
+	// textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection10");
+	// textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection11");
+	// textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection1_1");
+	// textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection20");
+	// textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection21");
+	// textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection2_1");
+	// textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection22");
+	// textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection2_2");
+	textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection00Spare");
+	// textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection10Spare");
+	// textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection11Spare");
+	// textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection1_1Spare");
+	// textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection20Spare");
+	// textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection21Spare");
+	// textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection2_1Spare");
+	// textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection22Spare");
+	// textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection2_2Spare");
+
 	AddMembersToGUI();
 
 	LoadAllShaders();
+	RecordSkyImage();
 	RecordSkybox();
 	glViewport(0, 0, _windowWidth, _windowHeight);
 
@@ -174,6 +194,12 @@ void Scene1::LoadAllShaders()
 
 	skyboxRecorderShader = LoadShaders("../Common/542shaders/As3SkyboxRecorder.vert",
 		"../Common/542shaders/As3SkyboxRecorder.frag");
+
+	projectionInputImageCalculator = new ComputeShaderDispatcher("../Common/542Shaders/As3IrradianceMaker.comp");
+	projectionInputImageCalculator2 = new ComputeShaderDispatcher("../Common/542Shaders/As3IrradianceMaker2.comp");
+
+	recorderShader = LoadShaders("../Common/542shaders/As3Recorder.vert",
+		"../Common/542shaders/As3Recorder.frag");
 }
 
 int Scene1::preRender()
@@ -230,7 +256,7 @@ int Scene1::preRender()
 
 int Scene1::Render()
 {
-	 HybridRendering();
+	  HybridRendering();
 
 	return 0;
 }
@@ -256,6 +282,7 @@ void Scene1::CleanUp()
 	glDeleteProgram(skydomeShader);
 
 	glDeleteProgram(skyboxRecorderShader);
+	glDeleteProgram(recorderShader);
 
 
 	MyImGUI::ClearImGUI();
@@ -266,6 +293,8 @@ void Scene1::CleanUp()
 	delete horizontalFilter;
 	delete verticalFilter;
 	delete blurFilterShader;
+	delete projectionInputImageCalculator;
+	delete projectionInputImageCalculator2;
 
 	delete sphereMesh;
 	delete centralMesh;
@@ -313,7 +342,7 @@ void Scene1::InitGraphics()
 	);
 	textureManager.AddTexture(
 		"../Common/ppms/MonValley_Lookout/MonValley_A_LookoutPoint_Env.hdr",
-		"irradianceMap",
+		"environmentMap",
 		Texture::TextureType::HDR
 	);
 
@@ -472,10 +501,10 @@ void Scene1::Draw2ndPass()
 		textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowSAT", "shadowBufferSAT");
 	}
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "shadowBuffer", "shadowBufferMap");
-	textureManager.ActivateTexture(floorObjMesh->GetShader(), "irradianceMap");
+	textureManager.ActivateTexture(floorObjMesh->GetShader(), "environmentMap");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "SkyCubeMap");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "skydomeImage", "equirectangularMap");
-	glm::ivec2 imageSize = textureManager.GetTextureSize("irradianceMap");
+	glm::ivec2 imageSize = textureManager.GetTextureSize("environmentMap");
 	floorObjMesh->SendUniformInt("skydomeImageWidth", imageSize.x);
 	floorObjMesh->SendUniformInt("skydomeImageHeight", imageSize.y);
 
@@ -629,7 +658,7 @@ void Scene1::DrawLocalLightsPass()
 	textureManager.ActivateTexture(spheres->GetShader(), "positionBuffer");
 	textureManager.ActivateTexture(spheres->GetShader(), "normalBuffer");
 	textureManager.ActivateTexture(spheres->GetShader(), "shadowBuffer");
-	textureManager.ActivateTexture(spheres->GetShader(), "irradianceMap");
+	textureManager.ActivateTexture(spheres->GetShader(), "environmentMap");
 
 
 	Point c = camera.Eye();
@@ -1001,6 +1030,8 @@ void Scene1::RenderDeferredObjects()
 	glCullFace(GL_BACK);
 	DispatchBlurFilter();
 
+	DispatchIrradianceMapMaker();
+
 	Draw1stPass();
 
 
@@ -1243,4 +1274,108 @@ void Scene1::RecordSkybox()
 	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
 	skyboxFB.RestoreDefaultFrameBuffer();
+}
+
+void Scene1::DispatchIrradianceMapMaker()
+{
+	projectionInputImageCalculator->PrepareDrawing();
+	// Activate image for src, and dst
+	textureManager.ActivateImage(projectionInputImageCalculator->GetShader(), "newSky", "src", GL_READ_ONLY);
+	textureManager.ActivateImage(projectionInputImageCalculator->GetShader(), "irradianceImageProjection00", "dst00", GL_WRITE_ONLY);
+	// textureManager.ActivateImage(projectionInputImageCalculator->GetShader(), "irradianceImageProjection10", "dst10", GL_WRITE_ONLY);
+	// textureManager.ActivateImage(projectionInputImageCalculator->GetShader(), "irradianceImageProjection11", "dst11", GL_WRITE_ONLY);
+	// textureManager.ActivateImage(projectionInputImageCalculator->GetShader(), "irradianceImageProjection1_1", "dst1_1", GL_WRITE_ONLY);
+	projectionInputImageCalculator->SendUniformInt("imageWidth", irradianceMapWidth);
+	projectionInputImageCalculator->SendUniformInt("imageHeight", irradianceMapHeight);
+	projectionInputImageCalculator->Dispatch(irradianceMapWidth / 16, irradianceMapHeight / 16, 1);
+
+	// projectionInputImageCalculator2->PrepareDrawing();
+	// // Activate image for src, and dst
+	// textureManager.ActivateImage(projectionInputImageCalculator2->GetShader(), "skydomeImage", "src", GL_READ_ONLY);
+	// textureManager.ActivateImage(projectionInputImageCalculator2->GetShader(), "irradianceImageProjection20", "dst20", GL_WRITE_ONLY);
+	// textureManager.ActivateImage(projectionInputImageCalculator2->GetShader(), "irradianceImageProjection21", "dst21", GL_WRITE_ONLY);
+	// textureManager.ActivateImage(projectionInputImageCalculator2->GetShader(), "irradianceImageProjection2_1", "dst2_1", GL_WRITE_ONLY);
+	// textureManager.ActivateImage(projectionInputImageCalculator2->GetShader(), "irradianceImageProjection2_2", "dst2_2", GL_WRITE_ONLY);
+	// textureManager.ActivateImage(projectionInputImageCalculator2->GetShader(), "irradianceImageProjection22", "dst22", GL_WRITE_ONLY);
+	// projectionInputImageCalculator2->SendUniformInt("imageWidth", irradianceMapWidth);
+	// projectionInputImageCalculator2->SendUniformInt("imageHeight", irradianceMapHeight);
+	// projectionInputImageCalculator2->Dispatch(irradianceMapWidth / 16, irradianceMapHeight / 16, 1);
+
+	SumIrradianceImageProjection("irradianceImageProjection00");
+	// SumIrradianceImageProjection("irradianceImageProjection10");
+	// SumIrradianceImageProjection("irradianceImageProjection11");
+	// SumIrradianceImageProjection("irradianceImageProjection1_1");
+	// SumIrradianceImageProjection("irradianceImageProjection20");
+	// SumIrradianceImageProjection("irradianceImageProjection21");
+	// SumIrradianceImageProjection("irradianceImageProjection2_1");
+	// SumIrradianceImageProjection("irradianceImageProjection22");
+	// SumIrradianceImageProjection("irradianceImageProjection2_2");
+}
+
+void Scene1::ActivateAppropriateIrradianceImage(GLuint shader, const char* textureName)
+{
+	if (irradianceToggle)
+	{
+		textureManager.ActivateImage(shader, textureName, "src", GL_READ_ONLY);
+		textureManager.ActivateImage(shader, (textureName + std::string("Spare")).c_str(), "dst", GL_WRITE_ONLY);
+	}
+	else
+	{
+		textureManager.ActivateImage(shader, (textureName + std::string("Spare")).c_str(), "src", GL_READ_ONLY);
+		textureManager.ActivateImage(shader, textureName, "dst", GL_WRITE_ONLY);
+	}
+	irradianceToggle = !irradianceToggle;
+}
+
+void Scene1::SumIrradianceImageProjection(const char* textureName)
+{
+	// Sum them up all.
+	irradianceToggle = true;
+	// Vertical pass
+	verticalFilter->PrepareDrawing();
+	int delta = 1;
+	while (delta < irradianceMapWidth)
+	{
+		verticalFilter->SendUniformInt("delta", delta);
+		ActivateAppropriateIrradianceImage(verticalFilter->GetShader(), textureName);
+		verticalFilter->Dispatch(irradianceMapWidth / 16, irradianceMapHeight / 16, 1);
+		glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
+		delta *= 2;
+	}
+
+	horizontalFilter->PrepareDrawing();
+
+	// Horizontal pass
+	delta = 1;
+	while (delta < irradianceMapWidth)
+	{
+		horizontalFilter->SendUniformInt("delta", delta);
+		ActivateAppropriateIrradianceImage(horizontalFilter->GetShader(), textureName);
+		horizontalFilter->Dispatch(irradianceMapWidth / 16, irradianceMapHeight / 16, 1);
+		delta *= 2;
+	}
+}
+
+void Scene1::RecordSkyImage()
+{
+
+	  glm::ivec2 skySize = textureManager.GetTextureSize("skydomeImage");
+	  imageConverterFB.Initialize(&textureManager, "newSky", skySize.x, skySize.y);
+	  glViewport(0, 0, skySize.x, skySize.y);
+	glm::mat4 mappingMatrix = glm::translate(glm::vec3(-1.f, -1.f, -1.f)) * glm::scale(glm::vec3(2.f));
+	glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1000.0f);
+	glm::mat4 captureView =
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	imageConverterFB.ApplyFBO();
+	floorObjMesh->SetShader(recorderShader);
+	floorObjMesh->PrepareDrawing();
+	floorObjMesh->SendUniformFloatMatrix4("view", &captureView[0][0]);
+	floorObjMesh->SendUniformFloatMatrix4("mapping", &mappingMatrix[0][0]);
+	floorObjMesh->SendUniformFloatMatrix4("projection", &captureProjection[0][0]);
+	textureManager.ActivateTexture(floorObjMesh->GetShader(), "skydomeImage", "image");
+	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
+
+	imageConverterFB.RestoreDefaultFrameBuffer();
+	glViewport(0, 0, _windowWidth, _windowHeight);
 }

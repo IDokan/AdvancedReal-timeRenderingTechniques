@@ -32,6 +32,8 @@ public:
 
 	void ActivateImage(GLuint programID, std::string activateName, GLenum access);
 	void ActivateImage(GLuint programID, std::string textureName, std::string activateName, GLenum access);
+	
+	void CopyTexture(std::string newTextureName, std::string oldTextureName);
 
 	GLuint GetTextureHandle(std::string textureName);
 

@@ -20,7 +20,7 @@ uniform sampler2D diffuseBuffer;
 uniform sampler2D specularBuffer;
 uniform sampler2D shadowBufferSAT;
 uniform sampler2D shadowBufferMap;
-uniform sampler2D irradianceMap;
+uniform sampler2D environmentMap;
 uniform samplerCube SkyCubeMap;
 uniform sampler2D equirectangularMap;
 
@@ -160,7 +160,7 @@ vec3 GetIrradianceColor(vec3 n)
 	equirectangularUV *= invAtan;
 	equirectangularUV += 0.5f;
 	
-	return pow(texture(irradianceMap, equirectangularUV).xyz, vec3(2.2));
+	return pow(texture(environmentMap, equirectangularUV).xyz, vec3(2.2));
 }
 
 int Characteristic(float d)

@@ -246,6 +246,18 @@ private:
 	void RecordSkybox();
 	GLuint skyboxRecorderShader;
 	float roughness;
+
+	ComputeShaderDispatcher* projectionInputImageCalculator;
+	ComputeShaderDispatcher* projectionInputImageCalculator2;
+	void DispatchIrradianceMapMaker();
+	int irradianceMapWidth;
+	int irradianceMapHeight;
+	bool irradianceToggle = true;
+	void ActivateAppropriateIrradianceImage(GLuint shader, const char* textureName);
+	void SumIrradianceImageProjection(const char* textureName);
+	FBO imageConverterFB;
+	void RecordSkyImage();
+	GLuint recorderShader;
 };
 
 #endif // CS542_SCENE1_H

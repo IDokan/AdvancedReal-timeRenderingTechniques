@@ -415,6 +415,18 @@
     <None Include="..\Common\542Shaders\As3SkyboxRecorder.vert">
       <Filter>Common\542Shaders</Filter>
     </None>
+    <None Include="..\Common\542Shaders\As3IrradianceMaker.comp">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As3IrradianceMaker2.comp">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As3Recorder.frag">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As3Recorder.vert">
+      <Filter>Common\542Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\myGUI\LICENSE.txt">
