@@ -88,8 +88,10 @@ void Texture::SetupTexture(int width, int height, int _textureNum)
 	glActiveTexture(GL_TEXTURE0 + textureNum);
 	glBindTexture(GL_TEXTURE_2D, textureHandle);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	std::vector<float> emptyData(width * height * 4, 0);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, emptyData.data());
@@ -167,6 +169,7 @@ void Texture::UpdateImage(GLuint programID, const GLchar* name, GLenum access)
 
 	glUseProgram(programID);
 
+	glActiveTexture(GL_TEXTURE0 + textureNum);
 	glBindImageTexture(textureNum, textureHandle, 0, GL_FALSE, 0, access, GL_RGBA32F);
 
 	GLint texSamplerLoc = glGetUniformLocation(programID, name);
@@ -186,6 +189,21 @@ void Texture::Clear()
 glm::ivec2 Texture::GetTextureSize() const
 {
 	return glm::ivec2(width, height);
+}
+
+glm::vec4 Texture::ReadPixelData(int x, int y)
+{
+	glBindTexture(GL_TEXTURE_2D, textureHandle);
+	std::vector<float> pixelData(width * height * 4);
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixelData.data());
+	
+	glm::vec4 result;
+	result.x = pixelData[4 * (y * width + x) + 0];
+	result.y = pixelData[4 * (y * width + x) + 1];
+	result.z = pixelData[4 * (y * width + x) + 2];
+	result.w = pixelData[4 * (y * width + x) + 3];
+
+	return result;
 }
 
 void Texture::SetupHdrTexture(const char* path, int textureNum)

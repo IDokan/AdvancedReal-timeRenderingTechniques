@@ -1,0 +1,103 @@
+///* Start Header -------------------------------------------------------
+//Copyright (C) Spring2023 DigiPen Institute of Technology.
+//Reproduction or disclosure of this file or its contents without the prior written
+//consent of DigiPen Institute of Technology is prohibited.
+//File Name: As3IrradianceMaker.comp
+//Purpose: compute shader to calculate irradiance map
+//Language: GLSL
+//Platform: Windows SDK version: 10.0.19041.0, OS: Windows 10. GPU: NVIDIA GeForce840M. OpenGL Driver version: 10.18.15.4279, 8-24-2015
+//Project: sinil.kang_CS562_3
+//Author: Sinil Kang = sinil.kang = Colleague ID: 0052782
+//Creation date: 3/4/2023
+//End Header --------------------------------------------------------*/
+
+#version 430
+
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+layout(rgba32f) uniform restrict writeonly image2D dst;
+
+uniform int imageWidth;
+uniform int imageHeight;
+
+const float PI = 3.1415926538;
+
+uniform vec4 e00;
+uniform vec4 e1_1;
+uniform vec4 e10;
+uniform vec4 e11;
+uniform vec4 e2_2;
+uniform vec4 e2_1;
+uniform vec4 e20;
+uniform vec4 e21;
+uniform vec4 e22;
+
+float SphericalHarmonicBasis00(float x, float y, float z)
+{
+	return 0.5 * sqrt(1 / PI);
+}
+
+float SphericalHarmonicBasis1_1(float x, float y, float z)
+{
+	return 0.5 * sqrt(3 / PI) * y;
+}
+
+float SphericalHarmonicBasis2_1(float x, float y, float z)
+{
+	return 0.5 * sqrt(15 / PI) * (y*z);
+}
+
+float SphericalHarmonicBasis2_2(float x, float y, float z)
+{
+	return 0.5 * sqrt(15 / PI) * (x*y);
+}
+
+float SphericalHarmonicBasis10(float x, float y, float z)
+{
+	return 0.5 * sqrt(3 / PI) * z;
+}
+
+float SphericalHarmonicBasis11(float x, float y, float z)
+{
+	return 0.5 * sqrt(3 / PI) * x;
+}
+
+float SphericalHarmonicBasis20(float x, float y, float z)
+{
+	return 0.25 * sqrt(5 / PI) * (3 * z * z - 1);
+}
+
+float SphericalHarmonicBasis21(float x, float y, float z)
+{
+	return 0.5 * sqrt(15 / PI) * (x*z);
+}
+
+float SphericalHarmonicBasis22(float x, float y, float z)
+{
+	return 0.25 * sqrt(15 / PI) * (x*x - y*y);
+}
+
+void main() 
+{
+	ivec2 i = ivec2(gl_GlobalInvocationID.xy);
+
+	float theta = PI * (i.y + 0.5f) / imageHeight;
+	float phi = 2.0f * PI * (i.x + 0.5f) / imageWidth;
+	float x = sin(theta) * cos(phi);
+	float y = sin(theta) * sin(phi);
+	float z = cos(theta);
+	
+		vec4 result = 
+		e00 * SphericalHarmonicBasis00(x, y, z) + 
+		e1_1 * SphericalHarmonicBasis1_1(x, y, z) + 
+		e10 * SphericalHarmonicBasis10(x, y, z) + 
+		e11 * SphericalHarmonicBasis11(x, y, z) + 
+		e2_2 * SphericalHarmonicBasis2_2(x, y, z) + 
+		e2_1 * SphericalHarmonicBasis2_1(x, y, z) + 
+		e20 * SphericalHarmonicBasis20(x, y, z) + 
+		e21 * SphericalHarmonicBasis21(x, y, z) + 
+		e22 * SphericalHarmonicBasis22(x, y, z)
+		;
+
+	imageStore(dst, i, result);
+}

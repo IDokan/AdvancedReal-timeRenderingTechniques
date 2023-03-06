@@ -83,6 +83,11 @@ glm::ivec2 TextureManager::GetTextureSize(std::string textureName)
 	return textures.find(textureName)->second.GetTextureSize();
 }
 
+glm::vec4 TextureManager::ReadPixelData(std::string textureName, int x, int y)
+{
+	return textures.find(textureName)->second.ReadPixelData(x, y);
+}
+
 void TextureManager::Clear()
 {
 	for (auto t = textures.begin(); t != textures.end(); t++)

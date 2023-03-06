@@ -72,6 +72,7 @@ namespace MyImGUI {
     float* u;
     float* v;
     float* roughness;
+    bool* useIrradianceMap;
 
     namespace Helper
     {
@@ -252,13 +253,14 @@ void MyImGUI::SetShadowReferences(int* _blurStrength, float* _bias, float* _near
     farDepth = _farDepth;
 }
 
-void MyImGUI::SetBRDFReferences(float* _exposure, float* _contrast, float*_u, float* _v, float* _roughness)
+void MyImGUI::SetBRDFReferences(float* _exposure, float* _contrast, float*_u, float* _v, float* _roughness, bool* _useIrradianceMap)
 {
     exposure = _exposure;
     contrast = _contrast;
     u = _u;
     v = _v;
     roughness = _roughness;
+    useIrradianceMap = _useIrradianceMap;
 }
 
 void MyImGUI::Helper::MaterialSetup()
@@ -474,6 +476,7 @@ void MyImGUI::Helper::BRDF()
         ImGui::SliderFloat("U", u, 0.f, 1.f);
         ImGui::SliderFloat("V", v, 0.f, 1.f);
         ImGui::SliderFloat("Roughness", roughness, 0.001f, 1.f);
+        ImGui::Checkbox("Use Irradiance Map", useIrradianceMap);
     }
 }
 

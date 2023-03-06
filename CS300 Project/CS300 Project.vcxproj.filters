@@ -415,16 +415,40 @@
     <None Include="..\Common\542Shaders\As3SkyboxRecorder.vert">
       <Filter>Common\542Shaders</Filter>
     </None>
-    <None Include="..\Common\542Shaders\As3IrradianceMaker.comp">
-      <Filter>Common\542Shaders</Filter>
-    </None>
-    <None Include="..\Common\542Shaders\As3IrradianceMaker2.comp">
-      <Filter>Common\542Shaders</Filter>
-    </None>
     <None Include="..\Common\542Shaders\As3Recorder.frag">
       <Filter>Common\542Shaders</Filter>
     </None>
     <None Include="..\Common\542Shaders\As3Recorder.vert">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As3IrradianceMaker00.comp">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As3IrradianceMaker1_1.comp">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As3IrradianceMaker2_1.comp">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As3IrradianceMaker2_2.comp">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As3IrradianceMaker10.comp">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As3IrradianceMaker11.comp">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As3IrradianceMaker20.comp">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As3IrradianceMaker21.comp">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As3IrradianceMaker22.comp">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As3Irr.comp">
       <Filter>Common\542Shaders</Filter>
     </None>
   </ItemGroup>

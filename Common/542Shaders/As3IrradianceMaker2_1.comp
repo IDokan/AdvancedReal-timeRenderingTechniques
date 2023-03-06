@@ -1,0 +1,47 @@
+///* Start Header -------------------------------------------------------
+//Copyright (C) Spring2023 DigiPen Institute of Technology.
+//Reproduction or disclosure of this file or its contents without the prior written
+//consent of DigiPen Institute of Technology is prohibited.
+//File Name: As3IrradianceMaker.comp
+//Purpose: compute shader to calculate irradiance map
+//Language: GLSL
+//Platform: Windows SDK version: 10.0.19041.0, OS: Windows 10. GPU: NVIDIA GeForce840M. OpenGL Driver version: 10.18.15.4279, 8-24-2015
+//Project: sinil.kang_CS562_3
+//Author: Sinil Kang = sinil.kang = Colleague ID: 0052782
+//Creation date: 3/4/2023
+//End Header --------------------------------------------------------*/
+
+#version 430
+
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+layout(rgba32f) uniform restrict readonly image2D src;
+layout(rgba32f) uniform restrict writeonly image2D dst2_1;
+
+uniform int imageWidth;
+uniform int imageHeight;
+
+const float PI = 3.1415926538;
+
+float SphericalHarmonicBasis2_1(float x, float y, float z)
+{
+	return 0.5 * sqrt(15 / PI) * (y*z);
+}
+
+void main() 
+{
+	ivec2 i = ivec2(gl_GlobalInvocationID.xy);
+	vec4 imageColor = imageLoad(src, i);
+
+	float theta = PI * (i.y + 0.5f) / imageHeight;
+	float phi = 2.0f * PI * (i.x + 0.5f) / imageWidth;
+	float x = sin(theta) * cos(phi);
+	float y = sin(theta) * sin(phi);
+	float z = cos(theta);
+
+	float deltaTheta = PI / imageHeight;
+	float deltaPhi = 2*PI / imageWidth;
+	vec4 resultScaler = vec4(sin(theta) * deltaTheta * deltaPhi) * imageColor;
+
+	imageStore(dst2_1, i, resultScaler * SphericalHarmonicBasis2_1(x, y, z));
+}

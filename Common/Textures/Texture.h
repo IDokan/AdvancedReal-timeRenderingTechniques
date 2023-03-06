@@ -43,6 +43,7 @@ public:
 	// (width, height)
 	glm::ivec2 GetTextureSize() const;
 
+	glm::vec4 ReadPixelData(int x, int y);
 private:
 	void SetupHdrTexture(const char* path, int textureNum);
 private:

@@ -23,6 +23,7 @@ uniform sampler2D shadowBufferMap;
 uniform sampler2D environmentMap;
 uniform samplerCube SkyCubeMap;
 uniform sampler2D equirectangularMap;
+uniform sampler2D irradianceImageProjection;
 
 out vec4 outColor;
 
@@ -61,8 +62,7 @@ const float PI = 3.1415926538;
 uniform float exposure;
 uniform float contrast;
 
-uniform mat4 tmp1;
-uniform mat4 tmp2;
+uniform bool UseIrradianceMap;
 
 
 // Uniformly distributed random numbers by Hammersley rule.
@@ -71,6 +71,7 @@ uniform HammersleyBlock
 	float N;
 	float tmp[2*100];
 } Hammersley;
+
 
 bool CalculateG(vec2 shadowIndex, float pixelDepth, int strength, float adjustedBias, inout float G)
 {
@@ -155,12 +156,23 @@ bool CalculateG(vec2 shadowIndex, float pixelDepth, int strength, float adjusted
 
 vec3 GetIrradianceColor(vec3 n)
 {
-	
-	vec2 equirectangularUV = vec2(atan(n.z, n.x), asin(n.y));
-	equirectangularUV *= invAtan;
-	equirectangularUV += 0.5f;
-	
-	return pow(texture(environmentMap, equirectangularUV).xyz, vec3(2.2));
+	if(UseIrradianceMap)
+	{
+		vec2 equirectangularUV = vec2(atan(n.z, n.x), asin(n.y));
+		equirectangularUV *= invAtan;
+		equirectangularUV += 0.5f;
+		
+		return pow(texture(irradianceImageProjection, equirectangularUV).xyz, vec3(2.2));
+	}
+	else
+	{
+		vec2 equirectangularUV = vec2(atan(n.z, n.x), asin(n.y));
+		equirectangularUV *= invAtan;
+		equirectangularUV += 0.5f;
+		
+		return pow(texture(environmentMap, equirectangularUV).xyz, vec3(2.2));
+
+	}
 }
 
 int Characteristic(float d)
@@ -274,7 +286,7 @@ vec3 CalculateDirectionalLight()
 		* GTermCalculationBRDF(view, reflection, vertexNormal, half, Ks.a) / (4.f * dot(view, vertexNormal));
 	}
 
-
+	
 	vec3 lightDiffuse = Kd.xyz / PI * GetIrradianceColor(vertexNormal);
 
 	lightSpecular.r = max(lightSpecular.r, 0);
@@ -321,8 +333,6 @@ void main()
 	vec3 color = vec3(0);
 
 	color += CalculateDirectionalLight();
-	// outColor = vec4(color, 1);
-	// return;
 	// float distanceView = texture(diffuseBuffer, uv).a;
 	// float s = (zFar - distanceView) / (zFar - zNear);
 	// color = s*color + (1-s)*intensityFog;

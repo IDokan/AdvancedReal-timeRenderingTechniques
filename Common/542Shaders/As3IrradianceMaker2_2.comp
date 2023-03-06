@@ -16,34 +16,16 @@
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 layout(rgba32f) uniform restrict readonly image2D src;
-layout(rgba32f) uniform restrict writeonly image2D dst00;
-// layout(rgba32f) uniform restrict writeonly image2D dst10;
-// layout(rgba32f) uniform restrict writeonly image2D dst11;
-// layout(rgba32f) uniform restrict writeonly image2D dst1_1;
+layout(rgba32f) uniform restrict writeonly image2D dst2_2;
 
 uniform int imageWidth;
 uniform int imageHeight;
 
 const float PI = 3.1415926538;
 
-float SphericalHarmonicBasis00(float x, float y, float z)
+float SphericalHarmonicBasis2_2(float x, float y, float z)
 {
-	return 0.5 * sqrt(1 / PI);
-}
-
-float SphericalHarmonicBasis1_1(float x, float y, float z)
-{
-	return 0.5 * sqrt(3 / PI) * y;
-}
-
-float SphericalHarmonicBasis10(float x, float y, float z)
-{
-	return 0.5 * sqrt(3 / PI) * z;
-}
-
-float SphericalHarmonicBasis11(float x, float y, float z)
-{
-	return 0.5 * sqrt(3 / PI) * x;
+	return 0.5 * sqrt(15 / PI) * (x*y);
 }
 
 void main() 
@@ -60,9 +42,6 @@ void main()
 	float deltaTheta = PI / imageHeight;
 	float deltaPhi = 2*PI / imageWidth;
 	vec4 resultScaler = vec4(sin(theta) * deltaTheta * deltaPhi) * imageColor;
-	
-	imageStore(dst00, i, imageLoad(src, i));//resultScaler * SphericalHarmonicBasis00(x, y, z));
-	// imageStore(dst10, i, resultScaler * SphericalHarmonicBasis10(x, y, z));
-	// imageStore(dst11, i, resultScaler * SphericalHarmonicBasis11(x, y, z));
-	// imageStore(dst1_1, i, resultScaler * SphericalHarmonicBasis1_1(x, y, z));
+
+	imageStore(dst2_2, i, resultScaler * SphericalHarmonicBasis2_2(x, y, z));
 }

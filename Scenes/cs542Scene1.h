@@ -247,17 +247,28 @@ private:
 	GLuint skyboxRecorderShader;
 	float roughness;
 
-	ComputeShaderDispatcher* projectionInputImageCalculator;
-	ComputeShaderDispatcher* projectionInputImageCalculator2;
+	ComputeShaderDispatcher* projectionInputImageCalculator00;
+	ComputeShaderDispatcher* projectionInputImageCalculator10;
+	ComputeShaderDispatcher* projectionInputImageCalculator11;
+	ComputeShaderDispatcher* projectionInputImageCalculator1_1;
+	ComputeShaderDispatcher* projectionInputImageCalculator20;
+	ComputeShaderDispatcher* projectionInputImageCalculator21;
+	ComputeShaderDispatcher* projectionInputImageCalculator2_1;
+	ComputeShaderDispatcher* projectionInputImageCalculator22;
+	ComputeShaderDispatcher* projectionInputImageCalculator2_2;
 	void DispatchIrradianceMapMaker();
 	int irradianceMapWidth;
 	int irradianceMapHeight;
 	bool irradianceToggle = true;
+	glm::vec4 CalculateImageProjection(ComputeShaderDispatcher* computeShader, const char* activatedDestinationTextureName);
 	void ActivateAppropriateIrradianceImage(GLuint shader, const char* textureName);
 	void SumIrradianceImageProjection(const char* textureName);
 	FBO imageConverterFB;
 	void RecordSkyImage();
 	GLuint recorderShader;
+	std::vector<glm::vec4> imageProjections;
+	bool useIrradianceMap = false;
+	ComputeShaderDispatcher* irr;
 };
 
 #endif // CS542_SCENE1_H

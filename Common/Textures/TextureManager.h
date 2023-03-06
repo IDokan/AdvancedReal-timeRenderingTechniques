@@ -38,6 +38,8 @@ public:
 	GLuint GetTextureHandle(std::string textureName);
 
 	glm::ivec2 GetTextureSize(std::string textureName);
+
+	glm::vec4 ReadPixelData(std::string textureName, int x, int y);
 	
 	void Clear();
 private:
