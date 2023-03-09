@@ -37,7 +37,8 @@ Scene1::Scene1(int width, int height)
 	angleOfRotate(0), vertexNormalFlag(false), faceNormalFlag(false),
 	oldX(0.f), oldY(0.f), cameraMovementOffset(0.004f), shouldReload(false), buf("../Common/Meshes/models/bunny.obj"), flip(false), uvImportType(Mesh::UVType::CUBE_MAPPED_UV),
 	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), shadowBufferSize(1024), blurStrength(0), bias(0.001f),
-	cubePath("../Common/Meshes/models/cube.obj"), exposure(1.f), contrast(1.f), roughness(0.001f), irradianceMapWidth(2048), irradianceMapHeight(1024)
+	cubePath("../Common/Meshes/models/cube.obj"), exposure(1.f), contrast(1.f), roughness(0.001f), backgroundImageWidth(2048), backgroundImageHeight(1024),
+	irradianceMapWidth(512), irradianceMapHeight(256)
 {
 	sphereMesh = new Mesh();
 	centralMesh = new Mesh();
@@ -329,19 +330,19 @@ void Scene1::InitGraphics()
 		"skydomeImage",
 		Texture::TextureType::HDR
 	);
-	textureManager.AddTexture(512, 256, "customIrr");
-	//textureManager.AddTexture(
-	//	"../Common/ppms/MonValley_Lookout/MonValley_A_LookoutPoint_Env.hdr",
-	//	"environmentMap",
-	//	Texture::TextureType::HDR
-	//);
+	textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "customIrr");
+	textureManager.AddTexture(
+		"../Common/ppms/MonValley_Lookout/MonValley_A_LookoutPoint_Env.hdr",
+		"environmentMap",
+		Texture::TextureType::HDR
+	);
 	glm::ivec2 skySize = textureManager.GetTextureSize("skydomeImage");
-	irradianceMapWidth = skySize.x;
-	irradianceMapHeight = skySize.y;
+	backgroundImageWidth = skySize.x;
+	backgroundImageHeight = skySize.y;
 
-	imageConverterFB.Initialize(&textureManager, "newSky", irradianceMapWidth, irradianceMapHeight);
-	textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjection");
-	textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "irradianceImageProjectionSpare");
+	imageConverterFB.Initialize(&textureManager, "newSky", backgroundImageWidth, backgroundImageHeight);
+	textureManager.AddTexture(backgroundImageWidth, backgroundImageHeight, "irradianceImageProjection");
+	textureManager.AddTexture(backgroundImageWidth, backgroundImageHeight, "irradianceImageProjectionSpare");
 
 	shadowFB.Initialize(&textureManager, "shadowBuffer", shadowBufferSize, shadowBufferSize);
 	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowSAT");
@@ -1321,9 +1322,9 @@ void Scene1::DispatchIrradianceMapMaker()
 	glUniform4fv(loc5, 1, &imageProjections[7].x);
 	GLint loc6 = glGetUniformLocation(irr->GetShader(), "e22");
 	glUniform4fv(loc6, 1, &imageProjections[8].x);
-	irr->SendUniformInt("imageWidth", 512);
-	irr->SendUniformInt("imageHeight", 256);
-	irr->Dispatch(512/ 16, 256/ 16, 1);
+	irr->SendUniformInt("imageWidth", irradianceMapWidth);
+	irr->SendUniformInt("imageHeight", irradianceMapHeight);
+	irr->Dispatch(irradianceMapWidth / 16, irradianceMapHeight / 16, 1);
 }
 
 glm::vec4 Scene1::CalculateImageProjection(ComputeShaderDispatcher* computeShader, const char* activatedDestinationTextureName)
@@ -1332,13 +1333,13 @@ glm::vec4 Scene1::CalculateImageProjection(ComputeShaderDispatcher* computeShade
 	// Activate image for src, and dst
 	textureManager.ActivateImage(computeShader->GetShader(), "newSky", "src", GL_READ_ONLY);
 	textureManager.ActivateImage(computeShader->GetShader(), "irradianceImageProjection", activatedDestinationTextureName, GL_WRITE_ONLY);
-	computeShader->SendUniformInt("imageWidth", irradianceMapWidth);
-	computeShader->SendUniformInt("imageHeight", irradianceMapHeight);
-	computeShader->Dispatch(irradianceMapWidth / 16, irradianceMapHeight / 16, 1);
+	computeShader->SendUniformInt("imageWidth", backgroundImageWidth);
+	computeShader->SendUniformInt("imageHeight", backgroundImageHeight);
+	computeShader->Dispatch(backgroundImageWidth / 16, backgroundImageHeight / 16, 1);
 
 	SumIrradianceImageProjection("irradianceImageProjection");
 
-	return textureManager.ReadPixelData("irradianceImageProjection", irradianceMapWidth - 1, irradianceMapHeight - 1);
+	return textureManager.ReadPixelData("irradianceImageProjection", backgroundImageWidth - 1, backgroundImageHeight - 1);
 }
 
 void Scene1::ActivateAppropriateIrradianceImage(GLuint shader, const char* textureName)
@@ -1363,11 +1364,11 @@ void Scene1::SumIrradianceImageProjection(const char* textureName)
 	// Vertical pass
 	verticalFilter->PrepareDrawing();
 	int delta = 1;
-	while (delta < irradianceMapWidth)
+	while (delta < backgroundImageWidth)
 	{
 		verticalFilter->SendUniformInt("delta", delta);
 		ActivateAppropriateIrradianceImage(verticalFilter->GetShader(), textureName);
-		verticalFilter->Dispatch(irradianceMapWidth / 16, irradianceMapHeight / 16, 1);
+		verticalFilter->Dispatch(backgroundImageWidth / 16, backgroundImageHeight / 16, 1);
 		glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
 		delta *= 2;
 	}
@@ -1376,11 +1377,11 @@ void Scene1::SumIrradianceImageProjection(const char* textureName)
 
 	// Horizontal pass
 	delta = 1;
-	while (delta < irradianceMapWidth)
+	while (delta < backgroundImageWidth)
 	{
 		horizontalFilter->SendUniformInt("delta", delta);
 		ActivateAppropriateIrradianceImage(horizontalFilter->GetShader(), textureName);
-		horizontalFilter->Dispatch(irradianceMapWidth / 16, irradianceMapHeight / 16, 1);
+		horizontalFilter->Dispatch(backgroundImageWidth / 16, backgroundImageHeight / 16, 1);
 		delta *= 2;
 	}
 }

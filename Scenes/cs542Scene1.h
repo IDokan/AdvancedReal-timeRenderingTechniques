@@ -257,8 +257,8 @@ private:
 	ComputeShaderDispatcher* projectionInputImageCalculator22;
 	ComputeShaderDispatcher* projectionInputImageCalculator2_2;
 	void DispatchIrradianceMapMaker();
-	int irradianceMapWidth;
-	int irradianceMapHeight;
+	int backgroundImageWidth;
+	int backgroundImageHeight;
 	bool irradianceToggle = true;
 	glm::vec4 CalculateImageProjection(ComputeShaderDispatcher* computeShader, const char* activatedDestinationTextureName);
 	void ActivateAppropriateIrradianceImage(GLuint shader, const char* textureName);
@@ -269,6 +269,8 @@ private:
 	std::vector<glm::vec4> imageProjections;
 	bool useIrradianceMap = false;
 	ComputeShaderDispatcher* irr;
+	int irradianceMapWidth;
+	int irradianceMapHeight;
 };
 
 #endif // CS542_SCENE1_H
