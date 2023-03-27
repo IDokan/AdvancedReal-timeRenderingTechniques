@@ -331,11 +331,6 @@ void Scene1::InitGraphics()
 		Texture::TextureType::HDR
 	);
 	textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "customIrr");
-	textureManager.AddTexture(
-		"../Common/ppms/MonValley_Lookout/MonValley_A_LookoutPoint_Env.hdr",
-		"environmentMap",
-		Texture::TextureType::HDR
-	);
 	glm::ivec2 skySize = textureManager.GetTextureSize("skydomeImage");
 	backgroundImageWidth = skySize.x;
 	backgroundImageHeight = skySize.y;

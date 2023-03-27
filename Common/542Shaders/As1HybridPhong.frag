@@ -162,7 +162,9 @@ vec3 GetIrradianceColor(vec3 n)
 		equirectangularUV *= invAtan;
 		equirectangularUV += 0.5f;
 		
-		return pow(texture(irradianceImageProjection, equirectangularUV).xyz, vec3(2.2));
+		vec3 sampledColor = texture(irradianceImageProjection, equirectangularUV).xyz;
+
+		return pow(clamp(sampledColor, 0.f, 2.f), vec3(2.2));
 	}
 	else
 	{
