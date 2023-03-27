@@ -71,6 +71,7 @@ private:
 
 	// 3rd Pass
 	void DrawLocalLightsPass();
+	void DrawLocalLightsDebugInfo();
 
 	void SetupCamera();
 	void MoveViewOfCamera(int x, int y);
@@ -114,6 +115,7 @@ private:
 
 	// Shaders
 	GLuint programID;
+	GLuint opacityShader;
 	GLuint phongShading;
 	ObjectMesh* mainObjMesh;
 	ObjectMesh* spheres;
@@ -123,7 +125,6 @@ private:
 	LineMesh* normalMesh;
 	// Face Normals
 	LineMesh* faceNormalMesh;
-	LineMesh* sphereOrbit;
 
 	// Hybrid rendering
 	GLuint fboCheckShader;
@@ -271,6 +272,8 @@ private:
 	ComputeShaderDispatcher* irr;
 	int irradianceMapWidth;
 	int irradianceMapHeight;
+	bool localLightFlag = false;
+	float debugObjectsOpacity;
 };
 
 #endif // CS542_SCENE1_H

@@ -20,7 +20,6 @@ uniform sampler2D diffuseBuffer;
 uniform sampler2D specularBuffer;
 uniform sampler2D shadowBufferSAT;
 uniform sampler2D shadowBufferMap;
-uniform sampler2D environmentMap;
 uniform samplerCube SkyCubeMap;
 uniform sampler2D equirectangularMap;
 uniform sampler2D irradianceImageProjection;
@@ -156,8 +155,6 @@ bool CalculateG(vec2 shadowIndex, float pixelDepth, int strength, float adjusted
 
 vec3 GetIrradianceColor(vec3 n)
 {
-	if(UseIrradianceMap)
-	{
 		vec2 equirectangularUV = vec2(atan(n.z, n.x), asin(n.y));
 		equirectangularUV *= invAtan;
 		equirectangularUV += 0.5f;
@@ -165,16 +162,6 @@ vec3 GetIrradianceColor(vec3 n)
 		vec3 sampledColor = texture(irradianceImageProjection, equirectangularUV).xyz;
 
 		return pow(clamp(sampledColor, 0.f, 2.f), vec3(2.2));
-	}
-	else
-	{
-		vec2 equirectangularUV = vec2(atan(n.z, n.x), asin(n.y));
-		equirectangularUV *= invAtan;
-		equirectangularUV += 0.5f;
-		
-		return pow(texture(environmentMap, equirectangularUV).xyz, vec3(2.2));
-
-	}
 }
 
 int Characteristic(float d)
@@ -215,16 +202,8 @@ float G1(vec3 v1, vec3 v2, vec3 normal, float alpha)
 	// Phong BRDF
 	float vDotNormal = dot(v1, normal);
 	float result = Characteristic(dot(v1, v2) / vDotNormal);
-	// if(vDotNormal > 1.0)
-	// {
-	// 	return 1.0f;
-	// }
 
 	float tanThetaV = sqrt(1 - pow(vDotNormal, 2)) / vDotNormal;
-	// if(tanThetaV <= 0.01f)
-	// {
-	// 	return 1.0f;
-	// }
 
 	return result * (2 / (1 + sqrt(1 + (pow(alpha, 2) * pow(tanThetaV, 2)))));
 }
@@ -239,10 +218,7 @@ vec2 GetDistributionFloats(float e1, float e2, float a)
 	// GGX BRDF
 	e2 = 1 - sin(e2 * PI);
 	float theta = atan(a * sqrt(e2) / sqrt(1 - e2));
-	//if(theta <= 0.001)
-	//{
-	//	theta = 0.001;
-	//}
+
 	return vec2(e1, (theta) / PI);
 }
 
@@ -278,9 +254,7 @@ vec3 CalculateDirectionalLight()
 		// distribution2 == (u, v) for which space????
 		vec2 distribution2 = GetDistributionFloats(Hammersley.tmp[i * 2], Hammersley.tmp[i * 2 + 1], Ks.a);
 		vec3 ZOrientedSampledLightInVectorFromSky = normalize(InverseLogitudeLatitudeSphereCoorinatesToVector(distribution2.x, distribution2.y));
-		// return vec3(abs(ZOrientedSampledLightInVectorFromSky));
 		vec3 lightIn = normalize(ZOrientedSampledLightInVectorFromSky.x * A + ZOrientedSampledLightInVectorFromSky.y * B + ZOrientedSampledLightInVectorFromSky.z * reflection);
-		// return abs(lightIn);
 		vec3 half = normalize(view + lightIn);
 		float distribution = Distribution(half, vertexNormal, Ks.a);
 
@@ -335,9 +309,6 @@ void main()
 	vec3 color = vec3(0);
 
 	color += CalculateDirectionalLight();
-	// float distanceView = texture(diffuseBuffer, uv).a;
-	// float s = (zFar - distanceView) / (zFar - zNear);
-	// color = s*color + (1-s)*intensityFog;
 	
 
 	// linear to sRGB

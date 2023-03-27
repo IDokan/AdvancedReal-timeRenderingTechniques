@@ -286,7 +286,7 @@ void AS1Scene::AddMembersToGUI()
 	MyImGUI::SetEnvironmentReferences(reinterpret_cast<float*>(&intensityFog), reinterpret_cast<float*>(&attenuationConstants));
 	MyImGUI::SetShaderReferences(&currentShader, &reloadShader);
 	MyImGUI::SetCentralMesh(centralMesh, mainObjMesh, &shouldReload, buf, &flip, &uvImportType, &calculateUVonCPU);
-	MyImGUI::SetHybridDebugging(&gbufferRenderTargetFlag, &depthWriteFlag, nullptr);
+	MyImGUI::SetHybridDebugging(&gbufferRenderTargetFlag, &depthWriteFlag, nullptr, nullptr, nullptr);
 }
 void AS1Scene::DrawMesh()
 {

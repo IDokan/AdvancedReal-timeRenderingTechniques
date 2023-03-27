@@ -28,7 +28,7 @@ namespace MyImGUI
     void SetEnvironmentReferences(float* intensityFog, float* attenuationConstants);
     void SetShaderReferences(int* currentShader, bool* reloadShader);
     void SetCentralMesh(Mesh* mesh, ObjectMesh* mainObjMesh, bool* shouldReload, char* buf, bool* flip, Mesh::UVType* uvType, bool* calculateUVonCPU);
-    void SetHybridDebugging(bool* ptrToGBufferRenderTargetFlag, bool* ptrToDepthWriteFlag, bool* ptrToisDrawDebugObjects);
+    void SetHybridDebugging(bool* ptrToGBufferRenderTargetFlag, bool* ptrToDepthWriteFlag, bool* ptrToisDrawDebugObjects, bool* ptrToLocalLightFlag, float* ptrToOpacity);
     void SetShadowReferences(int* _blurStrength, float* _bias, float* _nearDepth, float* _farDepth);
     void SetBRDFReferences(float* _exposure, float* _contrast, float* u, float* v, float* roughness, bool* useIrradianceMap);
 }

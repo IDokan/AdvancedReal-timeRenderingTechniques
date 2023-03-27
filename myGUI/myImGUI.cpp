@@ -61,6 +61,8 @@ namespace MyImGUI {
     bool* gBufferRenderTargetFlag;
     bool* depthWriteFlag;
     bool* isDrawDebugObjects;
+    bool* localLightFlag;
+    float* opacity;
 
     int* blurStrength;
     float* bias;
@@ -238,11 +240,13 @@ void MyImGUI::SetCentralMesh(Mesh* mesh, ObjectMesh* _mainObjMesh, bool* _should
     calculateUVonCPU = _calculateUVonCPU;
 }
 
-void MyImGUI::SetHybridDebugging(bool* ptrToGBufferRenderTargetFlag, bool* ptrToDepthWriteFlag, bool* ptrToisDrawDebugObjects)
+void MyImGUI::SetHybridDebugging(bool* ptrToGBufferRenderTargetFlag, bool* ptrToDepthWriteFlag, bool* ptrToisDrawDebugObjects, bool* ptrToLocalLightFlag, float* ptrToOpacity)
 {
     gBufferRenderTargetFlag = ptrToGBufferRenderTargetFlag;
     depthWriteFlag = ptrToDepthWriteFlag;
     isDrawDebugObjects = ptrToisDrawDebugObjects;
+    localLightFlag = ptrToLocalLightFlag;
+    opacity = ptrToOpacity;
 }
 
 void MyImGUI::SetShadowReferences(int* _blurStrength, float* _bias, float* _nearDepth, float* _farDepth)
@@ -447,9 +451,17 @@ void MyImGUI::Helper::HybridRenders()
     {
         ImGui::Checkbox("Show render targets in G-Buffer", gBufferRenderTargetFlag);
         ImGui::Checkbox("Copy depth information", depthWriteFlag);
+        if (localLightFlag != nullptr)
+        {
+            ImGui::Checkbox("Local Lights Mode", localLightFlag);
+        }
         if (isDrawDebugObjects != nullptr)
         {
             ImGui::Checkbox("Draw Debug Objects", isDrawDebugObjects);
+        }
+        if (isDrawDebugObjects && opacity != nullptr)
+        {
+            ImGui::SliderFloat("Opacity", opacity, 0.f, 1.f);
         }
     }
 }

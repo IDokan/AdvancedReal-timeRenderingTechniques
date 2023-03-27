@@ -451,6 +451,12 @@
     <None Include="..\Common\542Shaders\As3Irr.comp">
       <Filter>Common\542Shaders</Filter>
     </None>
+    <None Include="..\Common\542Shaders\OpacityShader.frag">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\OpacityShader.vert">
+      <Filter>Common\542Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\myGUI\LICENSE.txt">

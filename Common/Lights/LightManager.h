@@ -31,7 +31,7 @@ public:
 	float* GetDirectionalLightDirection();
 public:
 	static constexpr int propertySize = 8;
-	static constexpr unsigned MAX_LIGHT = 50;
+	static constexpr unsigned MAX_LIGHT = 97;
 	static constexpr int lightUniformDataSize = propertySize * MAX_LIGHT;
 
 private:

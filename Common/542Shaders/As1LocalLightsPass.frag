@@ -74,7 +74,6 @@ vec3 CalculatePointLight(TheStruct item, vec2 uv)
 	lightSpecular.b = max(lightSpecular.b, 0);
 
 	
-	int range = 50;
 	float attenuation = min(1/(attenuationConstants.x + attenuationConstants.y*distanceLight + attenuationConstants.z * distanceLight*distanceLight), 1);
 	attenuation = max(attenuation, 0);
 	vec3 intensityLocal = attenuation * (lightDiffuse + lightSpecular);
@@ -99,7 +98,6 @@ vec3 CalculateSpotlightEffect(TheStruct item, float alpha, vec2 uv)
 	lightSpecular.b = max(lightSpecular.b, 0);
 
 	
-	int range = 50;
 	float attenuation = min(1/(attenuationConstants.x + attenuationConstants.y*distanceLight + attenuationConstants.z * distanceLight*distanceLight), 1);
 
 	float spotlightEffect = pow((alpha - cos(item.anglesInnerOuter.y)) / (cos(item.anglesInnerOuter.x) - cos(item.anglesInnerOuter.y)), item.spotFalloff);
