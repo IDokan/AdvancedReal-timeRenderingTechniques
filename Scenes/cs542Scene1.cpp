@@ -394,9 +394,9 @@ void Scene1::InitGraphics()
 	sphereEnvironmentalMatrix[4] = glm::translate(glm::vec3(3.8f, 1.8f, 5.5f)) * glm::scale(glm::vec3(1.6f));
 	sphereEnvironmentalMatrix[5] = glm::translate(glm::vec3(4.5f, 1.f, -4.8f)) * glm::scale(glm::vec3(1.f));
 	sphereEnvironmentalMatrix[6] = glm::translate(glm::vec3(2.f, 0.85f, 2.5f)) * glm::scale(glm::vec3(0.85f));
-	sphereEnvironmentalMatrix[7] = glm::translate(glm::vec3(-6.f, 1.2f, 8.5f)) * glm::scale(glm::vec3(1.2f));
+	sphereEnvironmentalMatrix[7] = glm::translate(glm::vec3(-2.f, 1.2f, 8.5f)) * glm::scale(glm::vec3(1.2f));
 	sphereEnvironmentalMatrix[8] = glm::translate(glm::vec3(-6.f, 2.f, -7.f)) * glm::scale(glm::vec3(2.f));
-	sphereEnvironmentalMatrix[9] = glm::translate(glm::vec3(-2.f, 0.9f, -2.f)) * glm::scale(glm::vec3(0.9f));
+	sphereEnvironmentalMatrix[9] = glm::translate(glm::vec3(0.f, 0.9f, -2.5f)) * glm::scale(glm::vec3(0.9f));
 
 	sphereDiffuseColor.resize(sphereEnvironmentalSize);
 	sphereDiffuseColor[0] = glm::vec3(1.f, 0.f, 0.f);

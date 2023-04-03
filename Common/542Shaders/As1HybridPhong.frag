@@ -174,9 +174,9 @@ int Characteristic(float d)
 }
 
 // roughness is alpha value
-float Distribution(vec3 half, vec3 normal, float roughness)
+float Distribution(vec3 halfVector, vec3 normal, float roughness)
 {
-	float dotResult = dot(half, normal);
+	float dotResult = clamp(dot(normalize(halfVector), normalize(normal)), 0.f, 1.f);
 	float tanThetaM = sqrt((1.0 - pow(dotResult, 2))) / dotResult;
 	float roughnessSquared = pow(roughness, 2);
 	return Characteristic(dotResult) * (roughnessSquared) / (PI * pow(dotResult, 4) * pow(roughnessSquared + pow(tanThetaM, 2), 2));
@@ -200,17 +200,17 @@ vec3 GetHDRColor(vec3 n, float distribution)
 float G1(vec3 v1, vec3 v2, vec3 normal, float alpha)
 {
 	// Phong BRDF
-	float vDotNormal = dot(v1, normal);
+	float vDotNormal = clamp(dot(v1, normal), 0.f, 1.f);
 	float result = Characteristic(dot(v1, v2) / vDotNormal);
 
-	float tanThetaV = sqrt(1 - pow(vDotNormal, 2)) / vDotNormal;
+	float tanThetaV = sqrt(clamp(1 - pow(vDotNormal, 2), 0.f, 1.f)) / vDotNormal;
 
 	return result * (2 / (1 + sqrt(1 + (pow(alpha, 2) * pow(tanThetaV, 2)))));
 }
 
-float GTermCalculationBRDF(vec3 view, vec3 reflection, vec3 normal, vec3 half, float roughness)
+float GTermCalculationBRDF(vec3 view, vec3 reflection, vec3 normal, vec3 halfVector, float roughness)
 {
-	return G1(view, half, normal, roughness) * G1(reflection, half, normal, roughness);
+	return G1(view, halfVector, normal, roughness) * G1(reflection, halfVector, normal, roughness);
 }
 
 vec2 GetDistributionFloats(float e1, float e2, float a)
@@ -237,7 +237,7 @@ vec3 CalculateDirectionalLight()
 	vec4 Kd = texture(diffuseBuffer, uv);
 	vec4 Ks = texture(specularBuffer, uv);
 
-	vec3 vertexNormal = normalize(texture(normalBuffer, uv).rgb);
+	vec3 vertexNormal = (texture(normalBuffer, uv).rgb);
 	vec3 view = normalize(cPos - texture(positionBuffer, uv).rgb);
 
 	vec3 reflection = normalize(2*dot(vertexNormal, view)*vertexNormal - view);
@@ -245,21 +245,21 @@ vec3 CalculateDirectionalLight()
 	vec3 B = normalize(cross(reflection, A));
 
 	vec3 lightSpecular = vec3(0);
-
+	
 	// Choose N random directions light in vector according to probability p(wk) = D(H)
 	for(int i = 0; i < Hammersley.N; i++)
 	{
 		// I'm trying to debug it from the first Hammersley random number.
 			// If the first random number is -1 of the hemisphere, result is not wrong.
 		// distribution2 == (u, v) for which space????
-		vec2 distribution2 = GetDistributionFloats(Hammersley.tmp[i * 2], Hammersley.tmp[i * 2 + 1], Ks.a);
+		vec2 distribution2 = GetDistributionFloats(0.f, 0.5f, Ks.a);
 		vec3 ZOrientedSampledLightInVectorFromSky = normalize(InverseLogitudeLatitudeSphereCoorinatesToVector(distribution2.x, distribution2.y));
 		vec3 lightIn = normalize(ZOrientedSampledLightInVectorFromSky.x * A + ZOrientedSampledLightInVectorFromSky.y * B + ZOrientedSampledLightInVectorFromSky.z * reflection);
-		vec3 half = normalize(view + lightIn);
-		float distribution = Distribution(half, vertexNormal, Ks.a);
-
-		lightSpecular += GetHDRColor(lightIn, distribution) * FresnelReflection(dot(view, half), Ks.rgb)
-		* GTermCalculationBRDF(view, reflection, vertexNormal, half, Ks.a) / (4.f * dot(view, vertexNormal));
+		vec3 halfVector = normalize(view + lightIn);
+		float distribution = Distribution(halfVector, vertexNormal, Ks.a);
+		
+		lightSpecular += GetHDRColor(lightIn, distribution) * FresnelReflection(dot(view, halfVector), Ks.rgb)
+		* GTermCalculationBRDF(view, reflection, vertexNormal, halfVector, Ks.a) / (4.f * dot(view, vertexNormal));
 	}
 
 	
@@ -271,7 +271,6 @@ vec3 CalculateDirectionalLight()
 	lightSpecular /= Hammersley.N;
 
 	vec3 intensityLocal = (lightDiffuse + lightSpecular);
-
 
 
 	float G = 0.f;
@@ -301,7 +300,7 @@ vec3 CalculateDirectionalLight()
 		} while(result != true);
 	}
 
-	return (1.f - G) * intensityLocal;
+	return clamp((1.f - G) * intensityLocal, 0.f, 1.f);
 }
 
 void main()
