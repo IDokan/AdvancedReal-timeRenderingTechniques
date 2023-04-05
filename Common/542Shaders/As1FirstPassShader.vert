@@ -29,4 +29,6 @@ void main()
 	fragNormal = normalize(mat3(transpose(inverse(objToWorld))) * objNormal);
 
 	gl_Position = worldToNDC * objToWorld * vec4(objPosition, 1.0f);
+
+	fragPos.w = gl_Position.w;
 }

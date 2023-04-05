@@ -38,7 +38,8 @@ Scene1::Scene1(int width, int height)
 	oldX(0.f), oldY(0.f), cameraMovementOffset(0.004f), shouldReload(false), buf("../Common/Meshes/models/bunny.obj"), flip(false), uvImportType(Mesh::UVType::CUBE_MAPPED_UV),
 	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), shadowBufferSize(1024), blurStrength(0), bias(0.001f),
 	cubePath("../Common/Meshes/models/cube.obj"), exposure(1.f), contrast(1.f), roughness(0.001f), backgroundImageWidth(2048), backgroundImageHeight(1024),
-	irradianceMapWidth(512), irradianceMapHeight(256), localLightFlag(false), debugObjectsOpacity(0.5f)
+	irradianceMapWidth(512), irradianceMapHeight(256), localLightFlag(false), debugObjectsOpacity(0.5f), 
+	ambientOcclusionMapMaker(nullptr), sampledPointsForAO(10), influenceRangeForAO(5.f), aoScaler(1.f), aoContrast(1.f), ambientOcclusionBlurHorizontal(nullptr), ambientOcclusionBlurVertical(nullptr), aoBlurWidth(2), bk(aoBlurWidth)
 {
 	sphereMesh = new Mesh();
 	centralMesh = new Mesh();
@@ -190,6 +191,8 @@ void Scene1::LoadAllShaders()
 
 	recorderShader = LoadShaders("../Common/542shaders/As3Recorder.vert",
 		"../Common/542shaders/As3Recorder.frag");
+
+	ambientOcclusionMapMaker = new ComputeShaderDispatcher("../Common/542Shaders/As4AmbientOcclusion.comp");
 }
 
 int Scene1::preRender()
@@ -217,6 +220,7 @@ int Scene1::preRender()
 	{
 		gbufferRenderTargetsMatrix[i] = glm::translate(glm::vec3(-1.f + (0.5f * i), -1.f, 0.f)) * glm::scale(glm::vec3(0.5f));
 	}
+	gbufferRenderTargetsMatrix[0] = glm::translate(glm::vec3(-0.5f, -0.5f, 0.f)) * glm::scale(glm::vec3(1.5f));
 
 	UpdateCamera();
 
@@ -295,6 +299,8 @@ void Scene1::CleanUp()
 	delete projectionInputImageCalculator2_2;
 	delete irr;
 
+	delete ambientOcclusionMapMaker;
+
 	delete sphereMesh;
 	delete centralMesh;
 	delete normalMesh;
@@ -327,6 +333,10 @@ void Scene1::UpdateGUI()
 
 void Scene1::InitGraphics()
 {
+
+	// @@ TODO: Verify this initialize location does not produce any bugs.
+	textureManager.AddTexture(_windowWidth, _windowHeight, "ambientOcclusion");
+
 	textureManager.AddTexture(
 		"../Common/ppms/MonValley_Lookout/MonValley_A_LookoutPoint_2k.hdr",
 		"skydomeImage",
@@ -345,6 +355,7 @@ void Scene1::InitGraphics()
 	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowSAT");
 	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowSATSpare");
 	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowBlurred");
+
 
 
 
@@ -446,6 +457,7 @@ void Scene1::AddMembersToGUI()
 	MyImGUI::SetHybridDebugging(&gbufferRenderTargetFlag, &depthWriteFlag, &isDrawDebugObjects, &localLightFlag, &debugObjectsOpacity);
 	MyImGUI::SetShadowReferences(&blurStrength, &bias, &nearDepth, &farDepth);
 	MyImGUI::SetBRDFReferences(&exposure, &contrast, &h.hammersley[1], &h.hammersley[2], &roughness, &useIrradianceMap);
+	MyImGUI::SetAOReferences(&sampledPointsForAO, &influenceRangeForAO, &aoScaler, &aoContrast);
 }
 void Scene1::Draw2ndPass()
 {
@@ -1104,7 +1116,7 @@ void Scene1::RenderDeferredObjects()
 
 	Draw1stPass();
 
-
+	DispatchAmbientOcclusionMaker();
 
 	// disable depthwriting for temporarily
 	glDisable(GL_DEPTH_TEST);
@@ -1173,7 +1185,7 @@ void Scene1::DrawGBufferRenderTargets()
 {
 	floorObjMesh->SetShader(fboCheckShader);
 	floorObjMesh->PrepareDrawing();
-	textureManager.ActivateTexture(fboCheckShader, "positionBuffer", "tex");
+	textureManager.ActivateTexture(fboCheckShader, "ambientOcclusion", "tex");
 	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[0][0][0]);
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
@@ -1211,6 +1223,15 @@ void Scene1::DrawEnvironmentalObjects()
 		spheres->SendUniformFloat("roughness", sphereRoughness[i]);
 		spheres->Draw(sphereMesh->getIndexBufferSize());
 	}
+
+
+	// cubeObjMesh->SetShader(hybridFirstPass);
+	// cubeObjMesh->PrepareDrawing();
+	// glm::mat4 mappingMatrix = glm::scale(glm::vec3(100.f)) * glm::translate(glm::vec3(-1.f));
+	// glm::mat4 objToWorld = glm::translate(glm::vec3(camera.Eye().x, camera.Eye().y, camera.Eye().z));
+	// cubeObjMesh->SendUniformFloatMatrix4("objToWorld", &objToWorld[0][0]);
+	// cubeObjMesh->SendUniformFloatMatrix4("worldToNDC", &worldToNDC[0][0]);
+	// cubeObjMesh->Draw(cubeMesh->getIndexBufferSize());
 }
 
 void Scene1::DrawShadowPass()
@@ -1477,4 +1498,25 @@ void Scene1::RecordSkyImage()
 
 	imageConverterFB.RestoreDefaultFrameBuffer();
 	glViewport(0, 0, _windowWidth, _windowHeight);
+}
+
+void Scene1::DispatchAmbientOcclusionMaker()
+{
+	ambientOcclusionMapMaker->PrepareDrawing();
+
+	textureManager.ActivateTexture(ambientOcclusionMapMaker->GetShader(), "positionBuffer");
+	textureManager.ActivateTexture(ambientOcclusionMapMaker->GetShader(), "normalBuffer");
+	textureManager.ActivateImage(ambientOcclusionMapMaker->GetShader(), "ambientOcclusion", GL_WRITE_ONLY);
+
+	ambientOcclusionMapMaker->SendUniformInt("width", _windowWidth);
+	ambientOcclusionMapMaker->SendUniformInt("height", _windowHeight);
+	ambientOcclusionMapMaker->SendUniformInt("n", sampledPointsForAO);
+	ambientOcclusionMapMaker->SendUniformFloat("influenceRange", influenceRangeForAO);
+	ambientOcclusionMapMaker->SendUniformFloat("scaler", aoScaler);
+	ambientOcclusionMapMaker->SendUniformFloat("contrast", aoContrast);
+
+	ambientOcclusionMapMaker->Dispatch(_windowWidth / 16, _windowHeight / 16, 1);
+
+
+
 }

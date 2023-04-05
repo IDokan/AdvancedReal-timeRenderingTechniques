@@ -35,9 +35,14 @@ void ComputeShaderDispatcher::SendUniformInt(const char* uniformName, const int 
 	glUniform1i(loc, uniformData);
 }
 
-bool ComputeShaderDispatcher::SendUniformBlock(const GLchar* blockName, const GLsizei blockPropertyCount, const GLchar* const* blockPropertyNames, const float** blockPropertyData)
-{	// Step 1.	Design layout of the uniform Blocks
+void ComputeShaderDispatcher::SendUniformFloat(const char* uniformName, const float uniformData)
+{
+	GLint loc = glGetUniformLocation(shader, uniformName);
+	glUniform1f(loc, uniformData);
+}
 
+bool ComputeShaderDispatcher::SendUniformBlock(const GLchar* blockName, const GLsizei blockSize, const float* blockData)
+{
 	glUseProgram(shader);
 	// Step 2.	First get the block index
 	uniformBlockIndex = glGetUniformBlockIndex(shader, blockName);
@@ -47,42 +52,16 @@ bool ComputeShaderDispatcher::SendUniformBlock(const GLchar* blockName, const GL
 		return false;
 	}
 
-	// Step 3.	Allocate the block, get block indices and offsets
-	GLint uniformBlockSize = 0;
-	glGetActiveUniformBlockiv(shader, uniformBlockIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &uniformBlockSize);
-
-	GLuint* blockPropertyIndices = new GLuint[blockPropertyCount];
-	glGetUniformIndices(shader, blockPropertyCount, blockPropertyNames, blockPropertyIndices);
-
-	if (blockPropertyIndices[0] == GL_INVALID_INDEX)
-	{
-		std::cout << blockName << " is not applied, blockPropertyIndices[0] == GL_INVALID_INDEX" << std::endl;
-		return false;
-	}
-
-	GLint* offsets = new GLint[blockPropertyCount];
-	glGetActiveUniformsiv(shader, blockPropertyCount, blockPropertyIndices, GL_UNIFORM_OFFSET, offsets);
-
-	// Step 4.	Copy data into the buffer from CPU memory
-	char* buffer = new char[uniformBlockSize];
-	for (int i = 0; i < blockPropertyCount; ++i)
-	{
-		if (buffer + offsets[i] < &buffer[uniformBlockSize])
-		{
-			memcpy_s(buffer + offsets[i], sizeof(float) * 3, &blockPropertyData[i], sizeof(float) * 3);
-		}
-	}
-
 	// Step 5.	Create OpenGL buffer to manage this uniform block
 	if (uniformBlockBuffer == 0)
 	{
 		glGenBuffers(1, &uniformBlockBuffer);
 		glBindBuffer(GL_UNIFORM_BUFFER, uniformBlockBuffer);
 	}
-	glBufferData(GL_UNIFORM_BUFFER, uniformBlockSize, buffer, GL_DYNAMIC_DRAW);
 	glBindBufferBase(GL_UNIFORM_BUFFER, uniformBlockIndex, uniformBlockBuffer);
+	glBufferData(GL_UNIFORM_BUFFER, blockSize, blockData, GL_STATIC_DRAW);
 
-	delete[] buffer;
+	glUniformBlockBinding(shader, uniformBlockIndex, uniformBlockIndex);
 
 	return true;
 }

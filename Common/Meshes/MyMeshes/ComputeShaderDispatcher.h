@@ -22,7 +22,8 @@ public:
 	void PrepareDrawing();
 	// Not yet confirmed it works.
 	void SendUniformInt(const char* uniformName, const int uniformData);
-	bool SendUniformBlock(const GLchar* blockName, const GLsizei blockPropertyCount, const GLchar* const* blockPropertyNames, const float** blockPropertyData);
+	void SendUniformFloat(const char* uniformName, const float uniformData);
+	bool SendUniformBlock(const GLchar* blockName, const GLsizei blockSize, const float* blockData);
 	void Dispatch(GLuint x, GLuint y, GLuint z);
 
 	GLuint GetShader();

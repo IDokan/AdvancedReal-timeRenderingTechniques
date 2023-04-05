@@ -278,7 +278,7 @@ vec3 CalculateDirectionalLight()
 	bool result = false;
 
 	
-	vec4 shadowCoord = objToShadow * texture(positionBuffer, uv);
+	vec4 shadowCoord = objToShadow * vec4(texture(positionBuffer, uv).xyz, 1.f);
 	vec2 shadowIndex = shadowCoord.xy / shadowCoord.w;
 	float pixelDepth = (shadowCoord.w - nearDepth) / (farDepth - nearDepth);
 	float shadowMapDepth = texture(shadowBufferMap, shadowIndex).x;

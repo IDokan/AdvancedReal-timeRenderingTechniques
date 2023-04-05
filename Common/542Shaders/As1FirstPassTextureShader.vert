@@ -32,4 +32,6 @@ void main()
 	gl_Position = worldToNDC * objToWorld * vec4(objPosition, 1.0f);
 
 	fragUV = objUV;
+
+	fragPos.w = gl_Position.w;
 }

@@ -76,6 +76,11 @@ namespace MyImGUI {
     float* roughness;
     bool* useIrradianceMap;
 
+    int* sampledPointsForAO;
+    float* influenceRangeForAO;
+    float* aoScaler;
+    float* aoContrast;
+
     namespace Helper
     {
         void Normals();
@@ -108,6 +113,8 @@ namespace MyImGUI {
         void Shadows();
 
         void BRDF();
+
+        void AmbientOcclusion();
 
 
         // Helper to display a little (?) mark which shows a tooltip when hovered.
@@ -169,6 +176,7 @@ void MyImGUI::UpdateImGUI()
     Helper::HybridRenders();
     Helper::Shadows();
     Helper::BRDF();
+    Helper::AmbientOcclusion();
 
     // Shader selection is not disabled
     //Helper::Shaders();
@@ -265,6 +273,14 @@ void MyImGUI::SetBRDFReferences(float* _exposure, float* _contrast, float*_u, fl
     v = _v;
     roughness = _roughness;
     useIrradianceMap = _useIrradianceMap;
+}
+
+void MyImGUI::SetAOReferences(int* _sampledPointsForAO, float* _influenceRangeForAO, float* _aoScaler, float* _aoContrast)
+{
+    sampledPointsForAO = _sampledPointsForAO;
+    influenceRangeForAO = _influenceRangeForAO;
+    aoScaler = _aoScaler;
+    aoContrast = _aoContrast;
 }
 
 void MyImGUI::Helper::MaterialSetup()
@@ -489,6 +505,18 @@ void MyImGUI::Helper::BRDF()
         ImGui::SliderFloat("V", v, 0.f, 1.f);
         ImGui::SliderFloat("Roughness", roughness, 0.001f, 1.f);
         ImGui::Checkbox("Use Irradiance Map", useIrradianceMap);
+    }
+}
+
+void MyImGUI::Helper::AmbientOcclusion()
+{
+    if (ImGui::CollapsingHeader("Ambient Occlusion"))
+    {
+        ImGui::SliderInt("Sampled Points", sampledPointsForAO, 1, 20);
+        ImGui::SliderFloat("Influence Range", influenceRangeForAO, 0.01f, 10.f);
+        ImGui::SliderFloat("AO Scaler", aoScaler, 0.1f, 5.f);
+        ImGui::SliderFloat("AO Contrast", aoContrast, 0.1f, 5.f);
+        
     }
 }
 
