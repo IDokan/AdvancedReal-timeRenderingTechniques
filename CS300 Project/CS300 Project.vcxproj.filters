@@ -463,6 +463,9 @@
     <None Include="..\Common\542Shaders\As4BlurHorizontal.comp">
       <Filter>Common\542Shaders</Filter>
     </None>
+    <None Include="..\Common\542Shaders\As4BlurVertical.comp">
+      <Filter>Common\542Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\myGUI\LICENSE.txt">

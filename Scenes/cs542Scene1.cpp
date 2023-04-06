@@ -39,7 +39,7 @@ Scene1::Scene1(int width, int height)
 	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), shadowBufferSize(1024), blurStrength(0), bias(0.001f),
 	cubePath("../Common/Meshes/models/cube.obj"), exposure(1.f), contrast(1.f), roughness(0.001f), backgroundImageWidth(2048), backgroundImageHeight(1024),
 	irradianceMapWidth(512), irradianceMapHeight(256), localLightFlag(false), debugObjectsOpacity(0.5f), 
-	ambientOcclusionMapMaker(nullptr), sampledPointsForAO(10), influenceRangeForAO(5.f), aoScaler(1.f), aoContrast(1.f), ambientOcclusionBlurHorizontal(nullptr), ambientOcclusionBlurVertical(nullptr), aoBlurWidth(2), bk(aoBlurWidth)
+	ambientOcclusionMapMaker(nullptr), sampledPointsForAO(10), influenceRangeForAO(5.f), aoScaler(1.f), aoContrast(1.f), ambientOcclusionBlurHorizontal(nullptr), ambientOcclusionBlurVertical(nullptr), aoBlurWidth(2), bk(aoBlurWidth), aoVariance(0.01f)
 {
 	sphereMesh = new Mesh();
 	centralMesh = new Mesh();
@@ -193,6 +193,8 @@ void Scene1::LoadAllShaders()
 		"../Common/542shaders/As3Recorder.frag");
 
 	ambientOcclusionMapMaker = new ComputeShaderDispatcher("../Common/542Shaders/As4AmbientOcclusion.comp");
+	ambientOcclusionBlurHorizontal = new ComputeShaderDispatcher("../Common/542Shaders/As4BlurHorizontal.comp");
+	ambientOcclusionBlurVertical = new ComputeShaderDispatcher("../Common/542Shaders/As4BlurVertical.comp");
 }
 
 int Scene1::preRender()
@@ -300,6 +302,8 @@ void Scene1::CleanUp()
 	delete irr;
 
 	delete ambientOcclusionMapMaker;
+	delete ambientOcclusionBlurHorizontal;
+	delete ambientOcclusionBlurVertical;
 
 	delete sphereMesh;
 	delete centralMesh;
@@ -336,6 +340,7 @@ void Scene1::InitGraphics()
 
 	// @@ TODO: Verify this initialize location does not produce any bugs.
 	textureManager.AddTexture(_windowWidth, _windowHeight, "ambientOcclusion");
+	textureManager.AddTexture(_windowWidth, _windowHeight, "ambientOcclusionSpare");
 
 	textureManager.AddTexture(
 		"../Common/ppms/MonValley_Lookout/MonValley_A_LookoutPoint_2k.hdr",
@@ -457,7 +462,7 @@ void Scene1::AddMembersToGUI()
 	MyImGUI::SetHybridDebugging(&gbufferRenderTargetFlag, &depthWriteFlag, &isDrawDebugObjects, &localLightFlag, &debugObjectsOpacity);
 	MyImGUI::SetShadowReferences(&blurStrength, &bias, &nearDepth, &farDepth);
 	MyImGUI::SetBRDFReferences(&exposure, &contrast, &h.hammersley[1], &h.hammersley[2], &roughness, &useIrradianceMap);
-	MyImGUI::SetAOReferences(&sampledPointsForAO, &influenceRangeForAO, &aoScaler, &aoContrast);
+	MyImGUI::SetAOReferences(&sampledPointsForAO, &influenceRangeForAO, &aoScaler, &aoContrast, &aoBlurWidth, &aoVariance);
 }
 void Scene1::Draw2ndPass()
 {
@@ -1225,13 +1230,12 @@ void Scene1::DrawEnvironmentalObjects()
 	}
 
 
-	// cubeObjMesh->SetShader(hybridFirstPass);
-	// cubeObjMesh->PrepareDrawing();
-	// glm::mat4 mappingMatrix = glm::scale(glm::vec3(100.f)) * glm::translate(glm::vec3(-1.f));
-	// glm::mat4 objToWorld = glm::translate(glm::vec3(camera.Eye().x, camera.Eye().y, camera.Eye().z));
-	// cubeObjMesh->SendUniformFloatMatrix4("objToWorld", &objToWorld[0][0]);
-	// cubeObjMesh->SendUniformFloatMatrix4("worldToNDC", &worldToNDC[0][0]);
-	// cubeObjMesh->Draw(cubeMesh->getIndexBufferSize());
+	 //cubeObjMesh->SetShader(hybridFirstPass);
+	 //cubeObjMesh->PrepareDrawing();
+	 //glm::mat4 mappingMatrix = glm::translate(glm::vec3(camera.Eye().x, camera.Eye().y, camera.Eye().z)) * glm::scale(glm::vec3(15.f)) * glm::translate(glm::vec3(-1.f));
+	 //cubeObjMesh->SendUniformFloatMatrix4("objToWorld", &mappingMatrix[0][0]);
+	 //cubeObjMesh->SendUniformFloatMatrix4("worldToNDC", &worldToNDC[0][0]);
+	 //cubeObjMesh->Draw(cubeMesh->getIndexBufferSize());
 }
 
 void Scene1::DrawShadowPass()
@@ -1517,6 +1521,42 @@ void Scene1::DispatchAmbientOcclusionMaker()
 
 	ambientOcclusionMapMaker->Dispatch(_windowWidth / 16, _windowHeight / 16, 1);
 
+	if (depthWriteFlag)
+	{
+		bk.Resize(aoBlurWidth);
 
+		ambientOcclusionBlurHorizontal->PrepareDrawing();
 
+		textureManager.ActivateImage(ambientOcclusionBlurHorizontal->GetShader(), "positionBuffer", GL_READ_ONLY);
+		textureManager.ActivateImage(ambientOcclusionBlurHorizontal->GetShader(), "normalBuffer", GL_READ_ONLY);
+		textureManager.ActivateImage(ambientOcclusionBlurHorizontal->GetShader(), "ambientOcclusion", "src", GL_READ_ONLY);
+		textureManager.ActivateImage(ambientOcclusionBlurHorizontal->GetShader(), "ambientOcclusionSpare", "dst", GL_READ_ONLY);
+
+		ambientOcclusionBlurHorizontal->SendUniformBlock(bk.GetBlockName(), bk.GetBlockDataSize(), bk.GetData());
+		ambientOcclusionBlurHorizontal->SendUniformInt("width", aoBlurWidth);
+		ambientOcclusionBlurHorizontal->SendUniformInt("imageWidth", _windowWidth);
+		ambientOcclusionBlurHorizontal->SendUniformInt("imageHeight", _windowHeight);
+		ambientOcclusionBlurHorizontal->SendUniformFloat("variance", aoVariance);
+
+		ambientOcclusionBlurHorizontal->Dispatch(_windowWidth / 128, _windowHeight, 1);
+
+		glMemoryBarrier(GL_PIXEL_BUFFER_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT | GL_FRAMEBUFFER_BARRIER_BIT);
+
+		ambientOcclusionBlurVertical->PrepareDrawing();
+
+		textureManager.ActivateTexture(ambientOcclusionBlurVertical->GetShader(), "positionBuffer");
+		textureManager.ActivateTexture(ambientOcclusionBlurVertical->GetShader(), "normalBuffer");
+		textureManager.ActivateImage(ambientOcclusionBlurVertical->GetShader(), "ambientOcclusionSpare", "src", GL_READ_ONLY);
+		textureManager.ActivateImage(ambientOcclusionBlurVertical->GetShader(), "ambientOcclusion", "dst", GL_WRITE_ONLY);
+
+		ambientOcclusionBlurVertical->SendUniformBlock(bk.GetBlockName(), bk.GetBlockDataSize(), bk.GetData());
+		ambientOcclusionBlurVertical->SendUniformInt("width", aoBlurWidth);
+		ambientOcclusionBlurVertical->SendUniformInt("imageWidth", _windowWidth);
+		ambientOcclusionBlurVertical->SendUniformInt("imageHeight", _windowHeight);
+		ambientOcclusionBlurVertical->SendUniformFloat("variance", aoVariance);
+
+		ambientOcclusionBlurVertical->Dispatch(_windowWidth, _windowHeight / 128, 1);
+
+		glMemoryBarrier(GL_PIXEL_BUFFER_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT | GL_FRAMEBUFFER_BARRIER_BIT);
+	}
 }

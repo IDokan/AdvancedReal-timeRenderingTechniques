@@ -31,5 +31,5 @@ namespace MyImGUI
     void SetHybridDebugging(bool* ptrToGBufferRenderTargetFlag, bool* ptrToDepthWriteFlag, bool* ptrToisDrawDebugObjects, bool* ptrToLocalLightFlag, float* ptrToOpacity);
     void SetShadowReferences(int* _blurStrength, float* _bias, float* _nearDepth, float* _farDepth);
     void SetBRDFReferences(float* _exposure, float* _contrast, float* u, float* v, float* roughness, bool* useIrradianceMap);
-    void SetAOReferences(int* _sampledPointsForAO, float* _influenceRangeForAO, float* _aoScaler, float* _aoContrast);
+    void SetAOReferences(int* _sampledPointsForAO, float* _influenceRangeForAO, float* _aoScaler, float* _aoContrast, int* _aoBlurWidth, float* _aoVariance);
 }

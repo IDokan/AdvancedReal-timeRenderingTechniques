@@ -23,3 +23,17 @@ struct Hammersley{
 	constexpr static float N = 40;
 	float hammersley[static_cast<int>(2 * N)+1];
 };
+
+struct BlurKernel
+{
+	BlurKernel(int width);
+	
+	void Resize(int newWidth);
+
+	const GLchar* GetBlockName();
+	const GLsizei GetBlockDataSize();
+	const float* GetData();
+
+	float kernel[101];
+	int width;
+};

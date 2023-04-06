@@ -274,6 +274,19 @@ private:
 	int irradianceMapHeight;
 	bool localLightFlag = false;
 	float debugObjectsOpacity;
+
+	void DispatchAmbientOcclusionMaker();
+	ComputeShaderDispatcher* ambientOcclusionMapMaker;
+	int sampledPointsForAO;
+	float influenceRangeForAO;
+	float aoScaler;
+	float aoContrast;
+
+	ComputeShaderDispatcher* ambientOcclusionBlurHorizontal;
+	ComputeShaderDispatcher* ambientOcclusionBlurVertical;
+	int aoBlurWidth;
+	BlurKernel bk;
+	float aoVariance;
 };
 
 #endif // CS542_SCENE1_H

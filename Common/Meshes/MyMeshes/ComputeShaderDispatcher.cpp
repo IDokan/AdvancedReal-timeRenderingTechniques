@@ -15,6 +15,7 @@ End Header --------------------------------------------------------*/
 #include "shader.hpp"
 
 ComputeShaderDispatcher::ComputeShaderDispatcher(const char* compute_file_path)
+	:uniformBlockBuffer(0), uniformBlockIndex(0)
 {
 	shader = LoadShaders(compute_file_path);
 }

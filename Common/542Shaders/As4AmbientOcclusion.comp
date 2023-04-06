@@ -1,0 +1,87 @@
+///* Start Header -------------------------------------------------------
+//Copyright (C) Spring2023 DigiPen Institute of Technology.
+//Reproduction or disclosure of this file or its contents without the prior written
+//consent of DigiPen Institute of Technology is prohibited.
+//File Name: As4AmbientOcclusion.comp
+//Purpose: compute shader to calculate ambient occlusion map
+//Language: GLSL
+//Platform: Windows SDK version: 10.0.19041.0, OS: Windows 10. GPU: NVIDIA GeForce840M. OpenGL Driver version: 10.18.15.4279, 8-24-2015
+//Project: sinil.kang_CS562_4
+//Author: Sinil Kang = sinil.kang = Colleague ID: 0052782
+//Creation date: 4/3/2023
+//End Header --------------------------------------------------------*/
+
+#version 430
+
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+uniform sampler2D positionBuffer;
+uniform sampler2D normalBuffer;
+layout(rgba32f) uniform restrict writeonly image2D dst;
+
+uniform int width;
+uniform int height;
+
+uniform int n;
+uniform float influenceRange;
+
+const float PI = 3.1415926538;
+
+uniform float scaler;
+uniform float contrast;
+
+int Heaviside(float arguments)
+{
+	if(arguments <= 0.f)
+	{
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
+void main()
+{
+	ivec2 xy = ivec2(gl_GlobalInvocationID.xy);
+	vec2 uv = vec2(float(xy.x) / width, float(xy.y) / height);
+	
+	// position.w is depth
+	vec4 position = texture(positionBuffer, uv);
+	vec3 normal = texture(normalBuffer, uv).xyz;
+	
+	const int randomHash = (30*(xy.x^xy.y)) + 10*xy.x*xy.y;
+	const float c = 0.1f * influenceRange;
+	const float sigma = 0.0001f;
+
+	float S = 0.f;
+
+	for(int i = 0; i < n; i++)
+	{
+		float a = (i + 0.5f) / n;
+		float h = a * influenceRange / position.w;
+		float theta = 2 * PI * a * (7 * n / 9) + randomHash;
+
+		vec2 sampledUV = uv + h*vec2(cos(theta), sin(theta));
+		if(sampledUV.x > 1.f || sampledUV.x < 0.f || sampledUV.y > 1.f || sampledUV.y < 0.f)
+		{
+			continue;
+		}
+		// sampledUV.x = clamp(sampledUV.x, 0.f, 1.f);
+		// sampledUV.y = clamp(sampledUV.y, 0.f, 1.f);
+
+		vec4 sampledPosition = texture(positionBuffer, sampledUV);
+		vec3 wi = sampledPosition.xyz - position.xyz;
+
+		S += max(0.f, clamp(dot(normal, wi), 0.f, 100.f) - sigma*sampledPosition.w) * Heaviside(influenceRange - length(wi)) / max(c*c, dot(wi, wi));
+	}
+
+	S *= 2 * PI * c / n;
+
+	S = pow((1.f - (scaler * S)), contrast);
+	S = clamp(S, 0.f, S);
+
+	imageStore(dst, xy, vec4(S));
+	
+}

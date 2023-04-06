@@ -80,6 +80,8 @@ namespace MyImGUI {
     float* influenceRangeForAO;
     float* aoScaler;
     float* aoContrast;
+    int* aoBlurStrength;
+    float* aoVariance;
 
     namespace Helper
     {
@@ -275,12 +277,14 @@ void MyImGUI::SetBRDFReferences(float* _exposure, float* _contrast, float*_u, fl
     useIrradianceMap = _useIrradianceMap;
 }
 
-void MyImGUI::SetAOReferences(int* _sampledPointsForAO, float* _influenceRangeForAO, float* _aoScaler, float* _aoContrast)
+void MyImGUI::SetAOReferences(int* _sampledPointsForAO, float* _influenceRangeForAO, float* _aoScaler, float* _aoContrast, int* _aoBlurWidth, float* _aoVariance)
 {
     sampledPointsForAO = _sampledPointsForAO;
     influenceRangeForAO = _influenceRangeForAO;
     aoScaler = _aoScaler;
     aoContrast = _aoContrast;
+    aoBlurStrength = _aoBlurWidth;
+    aoVariance = _aoVariance;
 }
 
 void MyImGUI::Helper::MaterialSetup()
@@ -516,7 +520,8 @@ void MyImGUI::Helper::AmbientOcclusion()
         ImGui::SliderFloat("Influence Range", influenceRangeForAO, 0.01f, 10.f);
         ImGui::SliderFloat("AO Scaler", aoScaler, 0.1f, 5.f);
         ImGui::SliderFloat("AO Contrast", aoContrast, 0.1f, 5.f);
-        
+        ImGui::SliderInt("AO Blur Strength", aoBlurStrength, 1, 30);
+        ImGui::SliderFloat("AO Variance", aoVariance, 0.001f, 0.1f);
     }
 }
 

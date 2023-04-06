@@ -11,7 +11,10 @@ Project: sinil.kang_CS562
 Author: Sinil Kang = sinil.kang = Colleague ID: 0052782
 Creation date: 2/17/2023
 End Header --------------------------------------------------------*/
+#include <cmath>
+#include <glm/gtc/constants.hpp>
 #include "Structs.h"
+
 Hammersley::Hammersley()
 	:hammersley()
 {
@@ -47,4 +50,42 @@ const GLsizei Hammersley::GetBlockDataSize()
 const float* Hammersley::GetData()
 {
 	return hammersley;
+}
+
+BlurKernel::BlurKernel(int width)
+	:kernel(), width(width)
+{
+	Resize(width);
+}
+
+void BlurKernel::Resize(int _width)
+{
+	float sum = 0.f;
+	width = _width;
+	for (int i = -width; i <= width; i++)
+	{
+		int kernelIndex = i + width;
+		kernel[kernelIndex] = std::powf(glm::e<float>(), -0.5f * i * i / width * 2 / width * 2);
+		sum += kernel[kernelIndex];
+	}
+
+	for (int i = 0; i <= width*2; i++)
+	{
+		kernel[i] /= sum;
+	}
+}
+
+const GLchar* BlurKernel::GetBlockName()
+{
+	return "BlurKernelBlock";
+}
+
+const GLsizei BlurKernel::GetBlockDataSize()
+{
+	return (width * 2 + 1) * sizeof(float);
+}
+
+const float* BlurKernel::GetData()
+{
+	return kernel;
 }

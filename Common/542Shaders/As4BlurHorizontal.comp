@@ -1,0 +1,88 @@
+///* Start Header -------------------------------------------------------
+//Copyright (C) Spring2023 DigiPen Institute of Technology.
+//Reproduction or disclosure of this file or its contents without the prior written
+//consent of DigiPen Institute of Technology is prohibited.
+//File Name: As4AmbientOcclusion.comp
+//Purpose: compute shader to calculate ambient occlusion map
+//Language: GLSL
+//Platform: Windows SDK version: 10.0.19041.0, OS: Windows 10. GPU: NVIDIA GeForce840M. OpenGL Driver version: 10.18.15.4279, 8-24-2015
+//Project: sinil.kang_CS562_4
+//Author: Sinil Kang = sinil.kang = Colleague ID: 0052782
+//Creation date: 4/3/2023
+//End Header --------------------------------------------------------*/
+
+#version 430
+
+layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+
+uniform BlurKernelBlock { float weights[101]; } BlurKernel;
+
+uniform sampler2D positionBuffer;
+uniform sampler2D normalBuffer;
+layout(rgba32f) uniform restrict readonly image2D src;
+layout(rgba32f) uniform restrict writeonly image2D dst;
+
+shared vec4 v[128 + 101];	// Variable shared with other threads in the 128x1 thread group
+// normal xyz, and depth
+shared vec4 normalDepth[128 + 101];
+
+uniform int width;
+
+uniform int imageWidth;
+uniform int imageHeight;
+
+uniform float variance;
+
+const float PI = 3.1415926538;
+
+float RangeKernel(vec3 ni, vec3 n, float di, float d)
+{
+	if(length(ni) * length(n) < 0.25)
+	{
+		return 1.f / sqrt(2 * PI * variance) * exp(- pow(di - d, 2) / (2 * variance));
+	}
+	return max(0.f, dot(ni, n)) / sqrt(2 * PI * variance) * exp(- pow(di - d, 2) / (2 * variance));
+}
+
+void main()
+{
+	ivec2 gpos = ivec2(gl_GlobalInvocationID.xy);
+	
+	uint i = gl_LocalInvocationID.x;
+
+	ivec2 imagePos = gpos + ivec2(-width, 0);
+
+	v[i] = imageLoad(src, imagePos);
+	normalDepth[i].xyz = texture(normalBuffer, vec2(imagePos) / vec2(imageWidth, imageHeight)).xyz;
+	normalDepth[i].w = texture(positionBuffer, vec2(imagePos) / vec2(imageWidth, imageHeight)).w;
+
+	if(imagePos.x < 0)
+	{
+		v[i] = vec4(1.f);
+	}
+	
+	if(i < 2*width)
+	{
+		ivec2 imagePos2 = gpos + ivec2(128 - width, 0);
+		v[i + 128] = imageLoad(src, gpos + ivec2(128 - width, 0));
+		if(imagePos2.x >= imageWidth)
+		{
+			v[i+128] = vec4(1.f);
+		}
+		normalDepth[i + 128].xyz = texture(normalBuffer, vec2(gpos+ivec2(128 - width, 0)) / vec2(imageWidth, imageHeight)).xyz;
+		normalDepth[i + 128].w = texture(positionBuffer, vec2(gpos+ivec2(128 - width, 0)) / vec2(imageWidth, imageHeight)).w;
+	}
+	
+	barrier();
+	
+	vec4 result = vec4(0.f);
+	float sum = 0.f;
+	
+	for(int j = 0; j <= 2 * width; j++)
+	{
+		result += v[i + j] * BlurKernel.weights[j] * RangeKernel(normalDepth[i + j].xyz, normalDepth[i + width].xyz, normalDepth[i + j].w, normalDepth[i + width].w);
+		sum += BlurKernel.weights[j] * RangeKernel(normalDepth[i + j].xyz, normalDepth[i + width].xyz, normalDepth[i + j].w, normalDepth[i + width].w);
+	}
+
+	imageStore(dst, gpos, result / sum);
+}
