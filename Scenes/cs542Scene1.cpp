@@ -39,7 +39,7 @@ Scene1::Scene1(int width, int height)
 	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), shadowBufferSize(1024), blurStrength(0), bias(0.001f),
 	cubePath("../Common/Meshes/models/cube.obj"), exposure(1.f), contrast(1.f), roughness(0.001f), backgroundImageWidth(2048), backgroundImageHeight(1024),
 	irradianceMapWidth(512), irradianceMapHeight(256), localLightFlag(false), debugObjectsOpacity(0.5f), 
-	ambientOcclusionMapMaker(nullptr), sampledPointsForAO(10), influenceRangeForAO(5.f), aoScaler(1.f), aoContrast(1.f), ambientOcclusionBlurHorizontal(nullptr), ambientOcclusionBlurVertical(nullptr), aoBlurWidth(2), bk(aoBlurWidth), aoVariance(0.01f)
+	ambientOcclusionMapMaker(nullptr), sampledPointsForAO(10), influenceRangeForAO(5.f), aoScaler(1.f), aoContrast(1.f), ambientOcclusionBlurHorizontal(nullptr), ambientOcclusionBlurVertical(nullptr), aoBlurWidth(2), bk(aoBlurWidth), aoVariance(0.01f), aoBlurFlag(true)
 {
 	sphereMesh = new Mesh();
 	centralMesh = new Mesh();
@@ -342,6 +342,11 @@ void Scene1::InitGraphics()
 	textureManager.AddTexture(_windowWidth, _windowHeight, "ambientOcclusion");
 	textureManager.AddTexture(_windowWidth, _windowHeight, "ambientOcclusionSpare");
 
+	shadowFB.Initialize(&textureManager, "shadowBuffer", shadowBufferSize, shadowBufferSize);
+	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowSAT");
+	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowSATSpare");
+	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowBlurred");
+
 	textureManager.AddTexture(
 		"../Common/ppms/MonValley_Lookout/MonValley_A_LookoutPoint_2k.hdr",
 		"skydomeImage",
@@ -355,11 +360,6 @@ void Scene1::InitGraphics()
 	imageConverterFB.Initialize(&textureManager, "newSky", backgroundImageWidth, backgroundImageHeight);
 	textureManager.AddTexture(backgroundImageWidth, backgroundImageHeight, "irradianceImageProjection");
 	textureManager.AddTexture(backgroundImageWidth, backgroundImageHeight, "irradianceImageProjectionSpare");
-
-	shadowFB.Initialize(&textureManager, "shadowBuffer", shadowBufferSize, shadowBufferSize);
-	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowSAT");
-	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowSATSpare");
-	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowBlurred");
 
 
 
@@ -462,7 +462,7 @@ void Scene1::AddMembersToGUI()
 	MyImGUI::SetHybridDebugging(&gbufferRenderTargetFlag, &depthWriteFlag, &isDrawDebugObjects, &localLightFlag, &debugObjectsOpacity);
 	MyImGUI::SetShadowReferences(&blurStrength, &bias, &nearDepth, &farDepth);
 	MyImGUI::SetBRDFReferences(&exposure, &contrast, &h.hammersley[1], &h.hammersley[2], &roughness, &useIrradianceMap);
-	MyImGUI::SetAOReferences(&sampledPointsForAO, &influenceRangeForAO, &aoScaler, &aoContrast, &aoBlurWidth, &aoVariance);
+	MyImGUI::SetAOReferences(&sampledPointsForAO, &influenceRangeForAO, &aoScaler, &aoContrast, &aoBlurWidth, &aoVariance, &aoBlurFlag);
 }
 void Scene1::Draw2ndPass()
 {
@@ -489,6 +489,7 @@ void Scene1::Draw2ndPass()
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "SkyCubeMap");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "customIrr", "irradianceImageProjection");
 	textureManager.ActivateTexture(floorObjMesh->GetShader(), "skydomeImage", "equirectangularMap");
+	textureManager.ActivateTexture(floorObjMesh->GetShader(), "ambientOcclusion");
 
 	glm::mat4 diffuseObjToWorld = glm::translate(glm::vec3(-1.f, -1.f, 0.f)) * glm::scale(glm::vec3(2.f));
 	floorObjMesh->SendUniformFloatMatrix4("objToWorld", &diffuseObjToWorld[0][0]);
@@ -1521,7 +1522,7 @@ void Scene1::DispatchAmbientOcclusionMaker()
 
 	ambientOcclusionMapMaker->Dispatch(_windowWidth / 16, _windowHeight / 16, 1);
 
-	if (depthWriteFlag)
+	if (aoBlurFlag)
 	{
 		bk.Resize(aoBlurWidth);
 

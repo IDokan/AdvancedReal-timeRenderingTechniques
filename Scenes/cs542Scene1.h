@@ -287,6 +287,7 @@ private:
 	int aoBlurWidth;
 	BlurKernel bk;
 	float aoVariance;
+	bool aoBlurFlag;
 };
 
 #endif // CS542_SCENE1_H

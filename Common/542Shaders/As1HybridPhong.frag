@@ -23,6 +23,7 @@ uniform sampler2D shadowBufferMap;
 uniform samplerCube SkyCubeMap;
 uniform sampler2D equirectangularMap;
 uniform sampler2D irradianceImageProjection;
+uniform sampler2D ambientOcclusion;
 
 out vec4 outColor;
 
@@ -300,7 +301,7 @@ vec3 CalculateDirectionalLight()
 		} while(result != true);
 	}
 
-	return clamp((1.f - G) * intensityLocal, 0.f, 1.f);
+	return clamp((1.f - G) * intensityLocal, 0.f, 1.f) * texture(ambientOcclusion, uv).x;
 }
 
 void main()
