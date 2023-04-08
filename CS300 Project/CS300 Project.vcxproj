@@ -226,6 +226,7 @@ xcopy /y /d "..\ThirdParty\assimp\lib\*.dll" "$(TargetDir)"</Command>
     <ClInclude Include="..\Common\Meshes\MyMeshes\MyMesh.h" />
     <ClInclude Include="..\Common\Meshes\MyMeshes\ObjectMesh.h" />
     <ClInclude Include="..\Common\Meshes\MyObjReader.h" />
+    <ClInclude Include="..\Common\Noise\PerlinNoise.hpp" />
     <ClInclude Include="..\Common\ppms\ppmReader.h" />
     <ClInclude Include="..\Common\Scene.h" />
     <ClInclude Include="..\Common\shader.hpp" />
@@ -279,6 +280,7 @@ xcopy /y /d "..\ThirdParty\assimp\lib\*.dll" "$(TargetDir)"</Command>
     <None Include="..\Common\542Shaders\As4AmbientOcclusion.comp" />
     <None Include="..\Common\542Shaders\As4BlurHorizontal.comp" />
     <None Include="..\Common\542Shaders\As4BlurVertical.comp" />
+    <None Include="..\Common\542Shaders\As5WoodGenerator.comp" />
     <None Include="..\Common\542Shaders\OpacityShader.frag" />
     <None Include="..\Common\542Shaders\OpacityShader.vert" />
     <None Include="..\Common\ppms\black.ppm" />

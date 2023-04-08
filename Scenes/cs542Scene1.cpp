@@ -39,7 +39,8 @@ Scene1::Scene1(int width, int height)
 	calculateUVonCPU(true), reloadShader(false), gbufferRenderTargetFlag(false), depthWriteFlag(true), shadowBufferSize(1024), blurStrength(0), bias(0.001f),
 	cubePath("../Common/Meshes/models/cube.obj"), exposure(1.f), contrast(1.f), roughness(0.001f), backgroundImageWidth(2048), backgroundImageHeight(1024),
 	irradianceMapWidth(512), irradianceMapHeight(256), localLightFlag(false), debugObjectsOpacity(0.5f), 
-	ambientOcclusionMapMaker(nullptr), sampledPointsForAO(10), influenceRangeForAO(5.f), aoScaler(1.f), aoContrast(1.f), ambientOcclusionBlurHorizontal(nullptr), ambientOcclusionBlurVertical(nullptr), aoBlurWidth(2), bk(aoBlurWidth), aoVariance(0.01f), aoBlurFlag(true)
+	ambientOcclusionMapMaker(nullptr), sampledPointsForAO(10), influenceRangeForAO(5.f), aoScaler(1.f), aoContrast(1.f), ambientOcclusionBlurHorizontal(nullptr), ambientOcclusionBlurVertical(nullptr), aoBlurWidth(2), bk(aoBlurWidth), aoVariance(0.01f), aoBlurFlag(true),
+	frequency(8.0), octaves(8), generateNoiseFlag(false), baseColor(glm::vec3(0.58f, 0.30f, 0.f)), woodTextureGenerator(nullptr), generateWoodFlag(false), woodTextureSize(128)
 {
 	sphereMesh = new Mesh();
 	centralMesh = new Mesh();
@@ -131,6 +132,9 @@ int Scene1::Init()
 
 	frameBuffer.InitializeCustomBuffer(&textureManager, textureNames);
 
+	generateWoodFlag = true;
+	GenerateNewWoodMap();
+
 	return Scene::Init();
 }
 
@@ -195,10 +199,15 @@ void Scene1::LoadAllShaders()
 	ambientOcclusionMapMaker = new ComputeShaderDispatcher("../Common/542Shaders/As4AmbientOcclusion.comp");
 	ambientOcclusionBlurHorizontal = new ComputeShaderDispatcher("../Common/542Shaders/As4BlurHorizontal.comp");
 	ambientOcclusionBlurVertical = new ComputeShaderDispatcher("../Common/542Shaders/As4BlurVertical.comp");
+
+	woodTextureGenerator = new ComputeShaderDispatcher("../Common/542Shaders/As5WoodGenerator.comp");
 }
 
 int Scene1::preRender()
 {
+	GenerateNewNoiseMap();
+	GenerateNewWoodMap();
+
 	ReloadShader();
 	ReloadMesh();
 
@@ -305,6 +314,8 @@ void Scene1::CleanUp()
 	delete ambientOcclusionBlurHorizontal;
 	delete ambientOcclusionBlurVertical;
 
+	delete woodTextureGenerator;
+
 	delete sphereMesh;
 	delete centralMesh;
 	delete normalMesh;
@@ -341,6 +352,10 @@ void Scene1::InitGraphics()
 	// @@ TODO: Verify this initialize location does not produce any bugs.
 	textureManager.AddTexture(_windowWidth, _windowHeight, "ambientOcclusion");
 	textureManager.AddTexture(_windowWidth, _windowHeight, "ambientOcclusionSpare");
+
+	textureManager.AddPerlineNoise2D("noise", 128, 128, frequency, octaves);
+	textureManager.AddPerlineNoise1D("noise1d", woodTextureSize, frequency, octaves);
+	textureManager.AddTexture(woodTextureSize, woodTextureSize, "wood");
 
 	shadowFB.Initialize(&textureManager, "shadowBuffer", shadowBufferSize, shadowBufferSize);
 	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowSAT");
@@ -463,6 +478,8 @@ void Scene1::AddMembersToGUI()
 	MyImGUI::SetShadowReferences(&blurStrength, &bias, &nearDepth, &farDepth);
 	MyImGUI::SetBRDFReferences(&exposure, &contrast, &h.hammersley[1], &h.hammersley[2], &roughness, &useIrradianceMap);
 	MyImGUI::SetAOReferences(&sampledPointsForAO, &influenceRangeForAO, &aoScaler, &aoContrast, &aoBlurWidth, &aoVariance, &aoBlurFlag);
+	MyImGUI::SetNoiseReferences(&frequency, &octaves, &generateNoiseFlag);
+	MyImGUI::SetTextureReferences(&baseColor.x, &generateWoodFlag);
 }
 void Scene1::Draw2ndPass()
 {
@@ -587,8 +604,8 @@ void Scene1::Draw1stPass()
 
 	floorObjMesh->SendUniformFloatMatrix4("objToWorld", &floorMatrix[0][0]);
 	floorObjMesh->SendUniformFloatMatrix4("worldToNDC", &worldToNDC[0][0]);
-	textureManager.ActivateTexture(hybridTextureFirstPass, "diffuseTexture");
-	textureManager.ActivateTexture(hybridTextureFirstPass, "specularTexture");
+	textureManager.ActivateTexture(hybridTextureFirstPass, "wood", "diffuseTexture");
+	textureManager.ActivateTexture(hybridTextureFirstPass, "noise", "specularTexture");
 	floorObjMesh->SendUniformFloat("roughness", roughness);
 
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
@@ -1191,7 +1208,7 @@ void Scene1::DrawGBufferRenderTargets()
 {
 	floorObjMesh->SetShader(fboCheckShader);
 	floorObjMesh->PrepareDrawing();
-	textureManager.ActivateTexture(fboCheckShader, "ambientOcclusion", "tex");
+	textureManager.ActivateTexture(fboCheckShader, "diffuseBuffer", "tex");
 	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[0][0][0]);
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
@@ -1204,7 +1221,7 @@ void Scene1::DrawGBufferRenderTargets()
 
 	floorObjMesh->PrepareDrawing();
 	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[2][0][0]);
-	textureManager.ActivateTexture(fboCheckShader, "diffuseBuffer", "tex");
+	textureManager.ActivateTexture(fboCheckShader, "ambientOcclusion", "tex");
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
 	floorObjMesh->SetShader(fboCheckShader);
@@ -1559,5 +1576,34 @@ void Scene1::DispatchAmbientOcclusionMaker()
 		ambientOcclusionBlurVertical->Dispatch(_windowWidth, _windowHeight / 128, 1);
 
 		glMemoryBarrier(GL_PIXEL_BUFFER_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT | GL_FRAMEBUFFER_BARRIER_BIT);
+	}
+}
+
+void Scene1::GenerateNewNoiseMap()
+{
+	if (generateNoiseFlag)
+	{
+		generateNoiseFlag = false;
+
+		textureManager.UpdatePerlinNoise1D("noise1d", frequency, octaves);
+		textureManager.UpdatePerlinNoise2D("noise", frequency, octaves);
+	}
+}
+
+void Scene1::GenerateNewWoodMap()
+{
+	if (generateWoodFlag)
+	{
+		generateWoodFlag = false;
+
+		woodTextureGenerator->PrepareDrawing();
+
+		textureManager.ActivateTexture(woodTextureGenerator->GetShader(), "noise1d");
+		textureManager.ActivateImage(woodTextureGenerator->GetShader(), "wood", "dst", GL_WRITE_ONLY);
+
+		woodTextureGenerator->SendUniformInt("imageSize", woodTextureSize);
+		woodTextureGenerator->SendUniformFloat3("baseColor", &baseColor.x);
+
+		woodTextureGenerator->Dispatch(woodTextureSize / 16, woodTextureSize / 16, 1);
 	}
 }

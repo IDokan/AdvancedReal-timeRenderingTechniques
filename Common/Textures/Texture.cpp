@@ -15,9 +15,12 @@ End Header --------------------------------------------------------*/
 #include <../Common/ppms/ppmReader.h>
 #include <stb_image.h>
 #include <vector>
+#include "../Common/Noise/PerlinNoise.hpp"
+
+static siv::PerlinNoise::seed_type seed = 1;
 
 Texture::Texture()
-	: width(0), height(0), pixels(nullptr), textureNum(-1), textureHandle(0)
+	: width(0), height(0), depth(0), pixels(nullptr), textureNum(-1), textureHandle(0)
 {
 }
 
@@ -174,6 +177,207 @@ void Texture::UpdateImage(GLuint programID, const GLchar* name, GLenum access)
 
 	GLint texSamplerLoc = glGetUniformLocation(programID, name);
 	glUniform1i(texSamplerLoc, textureNum);
+}
+
+void Texture::SetupPerlineTexture1D(int width, int _textureNum, double frequency, int octaves)
+{
+	this->width = width;
+	this->height = 1;
+	textureNum = _textureNum;
+
+	glGenTextures(1, &textureHandle);
+
+	glActiveTexture(GL_TEXTURE0 + textureNum);
+	glBindTexture(GL_TEXTURE_1D, textureHandle);
+
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+
+	std::vector<float> emptyData(width * 4, 0);
+
+	// May seed value be changed.
+	seed += textureNum;
+	const siv::PerlinNoise perlin{ seed };
+	const double fx = frequency / width;
+	for (int i = 0; i < width; i++)
+	{
+		const float noise = static_cast<float>(perlin.octave1D_01(i * fx, octaves));
+		emptyData[(i * 4)] = noise;
+		emptyData[(i * 4) + 1] = noise;
+		emptyData[(i * 4) + 2] = noise;
+		emptyData[(i * 4) + 3] = noise;
+	}
+
+	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA32F, width, 0, GL_RGBA, GL_FLOAT, emptyData.data());
+}
+
+void Texture::UpdatePerlineTexture1D(double frequency, int octaves)
+{
+	glActiveTexture(GL_TEXTURE0 + textureNum);
+	glBindTexture(GL_TEXTURE_1D, textureHandle);
+
+	std::vector<float> emptyData(width * 4, 0);
+
+	// May seed value be changed.
+	seed += textureNum;
+	const siv::PerlinNoise perlin{ seed };
+	const double fx = frequency / width;
+	for (int i = 0; i < width; i++)
+	{
+		float noise = static_cast<float>(perlin.octave1D_01(i * fx, octaves));
+		emptyData[(i * 4)] = noise;
+		emptyData[(i * 4) + 1] = noise;
+		emptyData[(i * 4) + 2] = noise;
+		emptyData[(i * 4) + 3] = noise;
+	}
+
+	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA32F, width, 0, GL_RGBA, GL_FLOAT, emptyData.data());
+}
+
+void Texture::SetupPerlineTexture2D(int width, int height, int _textureNum, double frequency, int octaves)
+{
+	this->width = width;
+	this->height = height;
+	textureNum = _textureNum;
+
+	glGenTextures(1, &textureHandle);
+
+	glActiveTexture(GL_TEXTURE0 + textureNum);
+	glBindTexture(GL_TEXTURE_2D, textureHandle);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	std::vector<float> emptyData(width * height * 4, 0);
+
+	// May seed value be changed.
+	seed += textureNum;
+	const siv::PerlinNoise perlin{ seed };
+	const int channel = 4;
+	const double fx = frequency / width;
+	const double fy = frequency / height;
+	for (int x = 0; x < width; x++)
+	{
+		for (int y = 0; y < height; y++)
+		{
+			const float noise = static_cast<float>(perlin.octave2D_01(x * fx, y * fy, octaves));
+			emptyData[(x * channel) + (y*width* channel)] = noise;
+			emptyData[(x * channel) + (y*width* channel) + 1] = noise;
+			emptyData[(x * channel) + (y*width* channel) + 2] = noise;
+			emptyData[(x * channel) + (y*width* channel) + 3] = noise;
+		}
+	}
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, emptyData.data());
+}
+
+void Texture::UpdatePerlineTexture2D(double frequency, int octaves)
+{
+	glActiveTexture(GL_TEXTURE0 + textureNum);
+	glBindTexture(GL_TEXTURE_2D, textureHandle);
+
+	std::vector<float> emptyData(width * height * 4, 0);
+
+	// May seed value be changed.
+	seed += textureNum;
+	const siv::PerlinNoise perlin{ seed };
+	const int channel = 4;
+	const double fx = frequency / width;
+	const double fy = frequency / height;
+	for (int x = 0; x < width; x++)
+	{
+		for (int y = 0; y < height; y++)
+		{
+			const float noise = static_cast<float>(perlin.octave2D_01(x * fx, y * fy, octaves));
+			emptyData[(x * channel) + (y * width * channel)] = noise;
+			emptyData[(x * channel) + (y * width * channel) + 1] = noise;
+			emptyData[(x * channel) + (y * width * channel) + 2] = noise;
+			emptyData[(x * channel) + (y * width * channel) + 3] = noise;
+		}
+	}
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, emptyData.data());
+}
+
+void Texture::SetupPerlineTexture3D(int width, int height, int depth, int _textureNum, double frequency, int octaves)
+{
+	this->width = width;
+	this->height = height;
+	this->depth = depth;
+	textureNum = _textureNum;
+
+	glGenTextures(1, &textureHandle);
+
+	glActiveTexture(GL_TEXTURE0 + textureNum);
+	glBindTexture(GL_TEXTURE_3D, textureHandle);
+
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+
+	std::vector<float> emptyData(width * height * depth * 4, 0);
+
+	// May seed value be changed.
+	seed += textureNum;
+	const siv::PerlinNoise perlin{ seed };
+	const int channel = 4;
+	const double fx = frequency / width;
+	const double fy = frequency / height;
+	const double fz = frequency / depth;
+	for (int x = 0; x < width; x++)
+	{
+		for (int y = 0; y < height; y++)
+		{
+			for (int z = 0; z < depth; z++)
+			{
+				const float noise = static_cast<float>(perlin.octave3D_01(x * fx, y * fy, z * fz, octaves));
+				emptyData[(x * channel) + (y * width * channel) + (z * width * height * channel)] = noise;
+				emptyData[(x * channel) + (y * width * channel) + (z * width * height * channel) + 1] = noise;
+				emptyData[(x * channel) + (y * width * channel) + (z * width * height * channel) + 2] = noise;
+				emptyData[(x * channel) + (y * width * channel) + (z * width * height * channel) + 3] = noise;
+			}
+		}
+	}
+
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, width, height, depth, 0, GL_RGBA, GL_FLOAT, emptyData.data());
+}
+
+void Texture::UpdatePerlineTexture3D(double frequency, int octaves)
+{
+
+	glActiveTexture(GL_TEXTURE0 + textureNum);
+	glBindTexture(GL_TEXTURE_3D, textureHandle);
+
+	std::vector<float> emptyData(width * height * depth * 4, 0);
+
+	// May seed value be changed.
+	seed += textureNum;
+	const siv::PerlinNoise perlin{ seed };
+	const int channel = 4;
+	const double fx = frequency / width;
+	const double fy = frequency / height;
+	const double fz = frequency / depth;
+	for (int x = 0; x < width; x++)
+	{
+		for (int y = 0; y < height; y++)
+		{
+			for (int z = 0; z < depth; z++)
+			{
+				const float noise = static_cast<float>(perlin.octave3D_01(x * fx, y * fy, z * fz, octaves));
+				emptyData[(x * channel) + (y * width * channel) + (z * width * height * channel)] = noise;
+				emptyData[(x * channel) + (y * width * channel) + (z * width * height * channel) + 1] = noise;
+				emptyData[(x * channel) + (y * width * channel) + (z * width * height * channel) + 2] = noise;
+				emptyData[(x * channel) + (y * width * channel) + (z * width * height * channel) + 3] = noise;
+			}
+		}
+	}
+
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, width, height, depth, 0, GL_RGBA, GL_FLOAT, emptyData.data());
 }
 
 GLuint Texture::GetHandle() const

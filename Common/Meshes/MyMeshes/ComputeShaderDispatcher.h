@@ -23,6 +23,7 @@ public:
 	// Not yet confirmed it works.
 	void SendUniformInt(const char* uniformName, const int uniformData);
 	void SendUniformFloat(const char* uniformName, const float uniformData);
+	void SendUniformFloat3(const char* uniformName, const float* uniformData);
 	bool SendUniformBlock(const GLchar* blockName, const GLsizei blockSize, const float* blockData);
 	void Dispatch(GLuint x, GLuint y, GLuint z);
 

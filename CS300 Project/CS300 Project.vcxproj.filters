@@ -58,6 +58,9 @@
     <Filter Include="Common\542Shaders">
       <UniqueIdentifier>{11b6a738-360d-4e86-af3a-4d4c588f506b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Common\Noise">
+      <UniqueIdentifier>{48db0147-96af-47e6-80ed-3254eaa73984}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\1.0 - Simple Scene\GLApplication.cpp">
@@ -269,6 +272,9 @@
     <ClInclude Include="..\Common\Structs.h">
       <Filter>Common</Filter>
     </ClInclude>
+    <ClInclude Include="..\Common\Noise\PerlinNoise.hpp">
+      <Filter>Common\Noise</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Common\shaders\GUIShader.frag">
@@ -464,6 +470,9 @@
       <Filter>Common\542Shaders</Filter>
     </None>
     <None Include="..\Common\542Shaders\As4BlurVertical.comp">
+      <Filter>Common\542Shaders</Filter>
+    </None>
+    <None Include="..\Common\542Shaders\As5WoodGenerator.comp">
       <Filter>Common\542Shaders</Filter>
     </None>
   </ItemGroup>

@@ -40,6 +40,13 @@ public:
 	glm::ivec2 GetTextureSize(std::string textureName);
 
 	glm::vec4 ReadPixelData(std::string textureName, int x, int y);
+
+	void AddPerlineNoise1D(std::string textureName, int width, double frequency, int octaves);
+	void UpdatePerlinNoise1D(std::string textureName, double frequency, int octaves);
+	void AddPerlineNoise2D(std::string textureName, int width, int height, double frequency, int octaves);
+	void UpdatePerlinNoise2D(std::string textureName, double frequency, int octaves);
+	void AddPerlineNoise3D(std::string textureName, int width, int height, int depth, double frequency, int octaves);
+	void UpdatePerlinNoise3D(std::string textureName, double frequency, int octaves);
 	
 	void Clear();
 private:

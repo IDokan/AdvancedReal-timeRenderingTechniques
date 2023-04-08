@@ -1,0 +1,38 @@
+///* Start Header -------------------------------------------------------
+//Copyright (C) Spring2023 DigiPen Institute of Technology.
+//Reproduction or disclosure of this file or its contents without the prior written
+//consent of DigiPen Institute of Technology is prohibited.
+//File Name: As5WoodGenerator.comp
+//Purpose: compute shader to calculate ambient occlusion map
+//Language: GLSL
+//Platform: Windows SDK version: 10.0.19041.0, OS: Windows 10. GPU: NVIDIA GeForce840M. OpenGL Driver version: 10.18.15.4279, 8-24-2015
+//Project: sinil.kang_CS562_5
+//Author: Sinil Kang = sinil.kang = Colleague ID: 0052782
+//Creation date: 4/7/2023
+//End Header --------------------------------------------------------*/
+
+#version 430
+
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+uniform sampler1D noise1d;
+layout(rgba32f) uniform restrict writeonly image2D dst;
+
+uniform vec3 baseColor;
+uniform int imageSize;
+
+void main()
+{
+	ivec2 gpos = ivec2(gl_GlobalInvocationID.xy);
+	
+	uint i = gl_LocalInvocationID.x;
+
+	float exponent = texture(noise1d, float(gpos.x) / imageSize).r;
+	vec4 result;
+	result.x = clamp(pow(baseColor.x, 1.f / exponent), 0.f, 1.f);
+	result.y = clamp(pow(baseColor.y, 1.f / exponent), 0.f, 1.f);
+	result.z = clamp(pow(baseColor.z, 1.f / exponent), 0.f, 1.f);
+	result.w = 1.f;
+
+	imageStore(dst, gpos, result);
+}

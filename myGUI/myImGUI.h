@@ -32,4 +32,6 @@ namespace MyImGUI
     void SetShadowReferences(int* _blurStrength, float* _bias, float* _nearDepth, float* _farDepth);
     void SetBRDFReferences(float* _exposure, float* _contrast, float* u, float* v, float* roughness, bool* useIrradianceMap);
     void SetAOReferences(int* _sampledPointsForAO, float* _influenceRangeForAO, float* _aoScaler, float* _aoContrast, int* _aoBlurWidth, float* _aoVariance, bool* _aoBlurFlag);
+    void SetNoiseReferences(double* _frequency, int* octaves, bool* generateNoise);
+    void SetTextureReferences(float* _baseColor, bool* generateWood);
 }

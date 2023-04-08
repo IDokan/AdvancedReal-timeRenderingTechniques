@@ -36,6 +36,13 @@ public:
 	void UpdateTexture(GLuint programID, const GLchar* name);
 	void UpdateImage(GLuint programID, const GLchar* name, GLenum access);
 
+	void SetupPerlineTexture1D(int width, int textureNum, double frequency, int octaves);
+	void UpdatePerlineTexture1D(double frequency, int octaves);
+	void SetupPerlineTexture2D(int width, int height, int textureNum, double frequency, int octaves);
+	void UpdatePerlineTexture2D(double frequency, int octaves);
+	void SetupPerlineTexture3D(int width, int height, int depth, int textureNum, double frequency, int octaves);
+	void UpdatePerlineTexture3D(double frequency, int octaves);
+
 	GLuint GetHandle() const;
 
 	void Clear();
@@ -49,6 +56,7 @@ private:
 private:
 	int width;
 	int height;
+	int depth;
 	float* pixels;
 	int textureNum;
 

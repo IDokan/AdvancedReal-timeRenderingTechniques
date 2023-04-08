@@ -288,6 +288,18 @@ private:
 	BlurKernel bk;
 	float aoVariance;
 	bool aoBlurFlag;
+
+	// Perlin Noise
+	void GenerateNewNoiseMap();
+	double frequency;
+	int octaves;
+	bool generateNoiseFlag;
+
+	void GenerateNewWoodMap();
+	glm::vec3 baseColor;
+	ComputeShaderDispatcher* woodTextureGenerator;
+	bool generateWoodFlag;
+	int woodTextureSize;
 };
 
 #endif // CS542_SCENE1_H

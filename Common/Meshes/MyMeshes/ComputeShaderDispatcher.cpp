@@ -42,6 +42,12 @@ void ComputeShaderDispatcher::SendUniformFloat(const char* uniformName, const fl
 	glUniform1f(loc, uniformData);
 }
 
+void ComputeShaderDispatcher::SendUniformFloat3(const char* uniformName, const float* uniformData)
+{
+	GLint loc = glGetUniformLocation(shader, uniformName);
+	glUniform3f(loc, uniformData[0], uniformData[1], uniformData[2]);
+}
+
 bool ComputeShaderDispatcher::SendUniformBlock(const GLchar* blockName, const GLsizei blockSize, const float* blockData)
 {
 	glUseProgram(shader);

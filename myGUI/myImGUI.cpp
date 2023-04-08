@@ -84,6 +84,13 @@ namespace MyImGUI {
     float* aoVariance;
     bool* aoBlurFlag;
 
+    double* frequency;
+    int* octaves;
+    bool* generateNoise;
+
+    float* baseColor;
+    bool* generateWood;
+
     namespace Helper
     {
         void Normals();
@@ -118,6 +125,9 @@ namespace MyImGUI {
         void BRDF();
 
         void AmbientOcclusion();
+
+        void PerlinNoise();
+        void Texture();
 
 
         // Helper to display a little (?) mark which shows a tooltip when hovered.
@@ -180,6 +190,8 @@ void MyImGUI::UpdateImGUI()
     Helper::Shadows();
     Helper::BRDF();
     Helper::AmbientOcclusion();
+    Helper::PerlinNoise();
+    Helper::Texture();
 
     // Shader selection is not disabled
     //Helper::Shaders();
@@ -287,6 +299,19 @@ void MyImGUI::SetAOReferences(int* _sampledPointsForAO, float* _influenceRangeFo
     aoBlurStrength = _aoBlurWidth;
     aoVariance = _aoVariance;
     aoBlurFlag = _aoBlurFlag;
+}
+
+void MyImGUI::SetNoiseReferences(double* _frequency, int* _octaves, bool* _generateNoise)
+{
+    frequency = _frequency;
+    octaves = _octaves;
+    generateNoise = _generateNoise;
+}
+
+void MyImGUI::SetTextureReferences(float* _baseColor, bool* _generateWood)
+{
+    baseColor = _baseColor;
+    generateWood = _generateWood;
 }
 
 void MyImGUI::Helper::MaterialSetup()
@@ -525,6 +550,33 @@ void MyImGUI::Helper::AmbientOcclusion()
         ImGui::SliderInt("AO Blur Strength", aoBlurStrength, 1, 30);
         ImGui::SliderFloat("AO Variance", aoVariance, 0.001f, 0.1f);
         ImGui::Checkbox("AO Blur Flag", aoBlurFlag);
+    }
+}
+
+void MyImGUI::Helper::PerlinNoise()
+{
+    if (ImGui::CollapsingHeader("Noise"))
+    {
+        ImGui::InputDouble("Frequency", frequency);
+        *frequency = std::clamp(*frequency, 0.1, 64.0);
+        ImGui::SliderInt("Octaves", octaves, 1, 16);
+
+        if (ImGui::Button("Generate new noise map"))
+        {
+            *generateNoise = true;
+        }
+    }
+}
+
+void MyImGUI::Helper::Texture()
+{
+    if (ImGui::CollapsingHeader("Texture"))
+    {
+        ImGui::ColorEdit3("Base Color", baseColor);
+        if (ImGui::Button("Generate new wood texture"))
+        {
+            *generateWood = true;
+        }
     }
 }
 
