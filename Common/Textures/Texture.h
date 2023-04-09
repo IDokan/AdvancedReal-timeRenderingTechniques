@@ -13,6 +13,7 @@ End Header --------------------------------------------------------*/
 
 #pragma once
 
+#include <functional>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -36,12 +37,12 @@ public:
 	void UpdateTexture(GLuint programID, const GLchar* name);
 	void UpdateImage(GLuint programID, const GLchar* name, GLenum access);
 
-	void SetupPerlineTexture1D(int width, int textureNum, double frequency, int octaves);
-	void UpdatePerlineTexture1D(double frequency, int octaves);
-	void SetupPerlineTexture2D(int width, int height, int textureNum, double frequency, int octaves);
-	void UpdatePerlineTexture2D(double frequency, int octaves);
-	void SetupPerlineTexture3D(int width, int height, int depth, int textureNum, double frequency, int octaves);
-	void UpdatePerlineTexture3D(double frequency, int octaves);
+	void SetupPerlineTexture1D(int width, int textureNum, double frequency, int octaves, const std::function<float(float)>& f);
+	void UpdatePerlineTexture1D(double frequency, int octaves, const std::function<float(float)>& f);
+	void SetupPerlineTexture2D(int width, int height, int textureNum, double frequency, int octaves, const std::function<float(float)>& f);
+	void UpdatePerlineTexture2D(double frequency, int octaves, const std::function<float(float)>& f);
+	void SetupPerlineTexture3D(int width, int height, int depth, int textureNum, double frequency, int octaves, const std::function<float(float)>& f);
+	void UpdatePerlineTexture3D(double frequency, int octaves, const std::function<float(float)>& f);
 
 	GLuint GetHandle() const;
 

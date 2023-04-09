@@ -87,9 +87,12 @@ namespace MyImGUI {
     double* frequency;
     int* octaves;
     bool* generateNoise;
+    float* noiseScaler;
 
-    float* baseColor;
+    float* earlyColor;
+    float* lateColor;
     bool* generateWood;
+    bool* generateWood2;
 
     namespace Helper
     {
@@ -301,17 +304,20 @@ void MyImGUI::SetAOReferences(int* _sampledPointsForAO, float* _influenceRangeFo
     aoBlurFlag = _aoBlurFlag;
 }
 
-void MyImGUI::SetNoiseReferences(double* _frequency, int* _octaves, bool* _generateNoise)
+void MyImGUI::SetNoiseReferences(double* _frequency, int* _octaves, bool* _generateNoise, float* _scaler)
 {
     frequency = _frequency;
     octaves = _octaves;
     generateNoise = _generateNoise;
+    noiseScaler = _scaler;
 }
 
-void MyImGUI::SetTextureReferences(float* _baseColor, bool* _generateWood)
+void MyImGUI::SetTextureReferences(float* _earlyColor, float* _lateColor, bool* _generateWood, bool* _generateWood2)
 {
-    baseColor = _baseColor;
+    earlyColor = _earlyColor;
+    lateColor = _lateColor;
     generateWood = _generateWood;
+    generateWood2 = _generateWood2;
 }
 
 void MyImGUI::Helper::MaterialSetup()
@@ -560,6 +566,7 @@ void MyImGUI::Helper::PerlinNoise()
         ImGui::InputDouble("Frequency", frequency);
         *frequency = std::clamp(*frequency, 0.1, 64.0);
         ImGui::SliderInt("Octaves", octaves, 1, 16);
+        ImGui::SliderFloat("Noise Scaler", noiseScaler, 1.f, 20.f);
 
         if (ImGui::Button("Generate new noise map"))
         {
@@ -572,10 +579,15 @@ void MyImGUI::Helper::Texture()
 {
     if (ImGui::CollapsingHeader("Texture"))
     {
-        ImGui::ColorEdit3("Base Color", baseColor);
+        ImGui::ColorEdit3("Early Color", earlyColor);
+        ImGui::ColorEdit3("Late Color", lateColor);
         if (ImGui::Button("Generate new wood texture"))
         {
             *generateWood = true;
+        }
+        if (ImGui::Button("Generate new wood texture2"))
+        {
+            *generateWood2 = true;
         }
     }
 }

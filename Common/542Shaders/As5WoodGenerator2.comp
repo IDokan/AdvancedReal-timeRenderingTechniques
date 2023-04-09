@@ -15,7 +15,6 @@
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
-uniform sampler2D noise2d;
 uniform sampler1D noise1d;
 uniform sampler1D BinaryDecisionNoise;
 layout(rgba32f) uniform restrict writeonly image2D dst;
@@ -23,8 +22,6 @@ layout(rgba32f) uniform restrict writeonly image2D dst;
 uniform vec3 earlyColor;
 uniform vec3 lateColor;
 uniform int imageSize;
-
-uniform float scaler;
 
 void main()
 {
@@ -35,12 +32,6 @@ void main()
 	float basicGrowthRing = texture(BinaryDecisionNoise, float(gpos.x) / imageSize).r;
 	vec4 result;
 	result.xyz = mix(earlyColor, lateColor, basicGrowthRing);
-
-	float highlightColor = texture(noise2d, vec2(gpos) / imageSize).r;
-	float colorVariation = 1 - (highlightColor / 5.f) + (texture(noise1d, float(gpos.x) / imageSize).r  / 10.f);
-	result.x = pow(result.x, colorVariation);
-	result.y = pow(result.y, colorVariation);
-	result.z = pow(result.z, colorVariation);
 
 	result.w = 1.f;
 

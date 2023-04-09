@@ -475,6 +475,9 @@
     <None Include="..\Common\542Shaders\As5WoodGenerator.comp">
       <Filter>Common\542Shaders</Filter>
     </None>
+    <None Include="..\Common\542Shaders\As5WoodGenerator2.comp">
+      <Filter>Common\542Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\myGUI\LICENSE.txt">

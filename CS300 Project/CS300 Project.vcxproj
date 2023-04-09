@@ -281,6 +281,7 @@ xcopy /y /d "..\ThirdParty\assimp\lib\*.dll" "$(TargetDir)"</Command>
     <None Include="..\Common\542Shaders\As4BlurHorizontal.comp" />
     <None Include="..\Common\542Shaders\As4BlurVertical.comp" />
     <None Include="..\Common\542Shaders\As5WoodGenerator.comp" />
+    <None Include="..\Common\542Shaders\As5WoodGenerator2.comp" />
     <None Include="..\Common\542Shaders\OpacityShader.frag" />
     <None Include="..\Common\542Shaders\OpacityShader.vert" />
     <None Include="..\Common\ppms\black.ppm" />

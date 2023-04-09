@@ -88,43 +88,43 @@ glm::vec4 TextureManager::ReadPixelData(std::string textureName, int x, int y)
 	return textures.find(textureName)->second.ReadPixelData(x, y);
 }
 
-void TextureManager::AddPerlineNoise1D(std::string textureName, int width, double frequency, int octaves)
+void TextureManager::AddPerlineNoise1D(std::string textureName, int width, double frequency, int octaves, const std::function<float(float)>& f)
 {
 	std::pair<std::string, Texture> newTex;
 	newTex.first = textureName;
-	newTex.second.SetupPerlineTexture1D(width, textureSize++, frequency, octaves);
+	newTex.second.SetupPerlineTexture1D(width, textureSize++, frequency, octaves, f);
 	textures.insert(newTex);
 }
 
-void TextureManager::UpdatePerlinNoise1D(std::string textureName, double frequency, int octaves)
+void TextureManager::UpdatePerlinNoise1D(std::string textureName, double frequency, int octaves, const std::function<float(float)>& f)
 {
-	textures[textureName].UpdatePerlineTexture1D(frequency, octaves);
+	textures[textureName].UpdatePerlineTexture1D(frequency, octaves, f);
 }
 
-void TextureManager::AddPerlineNoise2D(std::string textureName, int width, int height, double frequency, int octaves)
+void TextureManager::AddPerlineNoise2D(std::string textureName, int width, int height, double frequency, int octaves, const std::function<float(float)>& f)
 {
 	std::pair<std::string, Texture> newTex;
 	newTex.first = textureName;
-	newTex.second.SetupPerlineTexture2D(width, height, textureSize++, frequency, octaves);
+	newTex.second.SetupPerlineTexture2D(width, height, textureSize++, frequency, octaves, f);
 	textures.insert(newTex);
 }
 
-void TextureManager::UpdatePerlinNoise2D(std::string textureName, double frequency, int octaves)
+void TextureManager::UpdatePerlinNoise2D(std::string textureName, double frequency, int octaves, const std::function<float(float)>& f)
 {
-	textures[textureName].UpdatePerlineTexture2D(frequency, octaves);
+	textures[textureName].UpdatePerlineTexture2D(frequency, octaves, f);
 }
 
-void TextureManager::AddPerlineNoise3D(std::string textureName, int width, int height, int depth, double frequency, int octaves)
+void TextureManager::AddPerlineNoise3D(std::string textureName, int width, int height, int depth, double frequency, int octaves, const std::function<float(float)>& f)
 {
 	std::pair<std::string, Texture> newTex;
 	newTex.first = textureName;
-	newTex.second.SetupPerlineTexture3D(width, height, depth, textureSize++, frequency, octaves);
+	newTex.second.SetupPerlineTexture3D(width, height, depth, textureSize++, frequency, octaves, f);
 	textures.insert(newTex);
 }
 
-void TextureManager::UpdatePerlinNoise3D(std::string textureName, double frequency, int octaves)
+void TextureManager::UpdatePerlinNoise3D(std::string textureName, double frequency, int octaves, const std::function<float(float)>& f)
 {
-	textures[textureName].UpdatePerlineTexture3D(frequency, octaves);
+	textures[textureName].UpdatePerlineTexture3D(frequency, octaves, f);
 }
 
 void TextureManager::Clear()
