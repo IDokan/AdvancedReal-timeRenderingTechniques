@@ -40,7 +40,7 @@ Scene1::Scene1(int width, int height)
 	cubePath("../Common/Meshes/models/cube.obj"), exposure(1.f), contrast(1.f), roughness(0.001f), backgroundImageWidth(2048), backgroundImageHeight(1024),
 	irradianceMapWidth(512), irradianceMapHeight(256), localLightFlag(false), debugObjectsOpacity(0.5f), 
 	ambientOcclusionMapMaker(nullptr), sampledPointsForAO(10), influenceRangeForAO(5.f), aoScaler(1.f), aoContrast(1.f), ambientOcclusionBlurHorizontal(nullptr), ambientOcclusionBlurVertical(nullptr), aoBlurWidth(2), bk(aoBlurWidth), aoVariance(0.01f), aoBlurFlag(true),
-	frequency(8.0), octaves(8), generateNoiseFlag(false), earlyColor(glm::vec3(0.72f, 0.45f, 0.15f)), lateColor(glm::vec3(0.54f, 0.27f, 0.f)), woodTextureGenerator(nullptr), generateWoodFlag(false), generateWoodFlag2(false), woodTextureSize(128), scaler(2.f)
+	frequency(8.0), octaves(8), generateNoiseFlag(false), earlyColor(glm::vec3(0.72f, 0.45f, 0.15f)), lateColor(glm::vec3(0.54f, 0.27f, 0.f)), woodTextureGenerator(nullptr), generateWoodFlag(false), woodTextureSize(256), distortionStrength(20.f), colorVariationStrength(0.6f)
 {
 	sphereMesh = new Mesh();
 	centralMesh = new Mesh();
@@ -201,7 +201,6 @@ void Scene1::LoadAllShaders()
 	ambientOcclusionBlurVertical = new ComputeShaderDispatcher("../Common/542Shaders/As4BlurVertical.comp");
 
 	woodTextureGenerator = new ComputeShaderDispatcher("../Common/542Shaders/As5WoodGenerator.comp");
-	woodTextureGenerator2 = new ComputeShaderDispatcher("../Common/542Shaders/As5WoodGenerator2.comp");
 }
 
 int Scene1::preRender()
@@ -316,7 +315,6 @@ void Scene1::CleanUp()
 	delete ambientOcclusionBlurVertical;
 
 	delete woodTextureGenerator;
-	delete woodTextureGenerator2;
 
 	delete sphereMesh;
 	delete centralMesh;
@@ -350,48 +348,32 @@ void Scene1::UpdateGUI()
 
 void Scene1::InitGraphics()
 {
-
 	// @@ TODO: Verify this initialize location does not produce any bugs.
 	textureManager.AddTexture(_windowWidth, _windowHeight, "ambientOcclusion");
-	textureManager.AddTexture(_windowWidth, _windowHeight, "ambientOcclusionSpare");
 
-	textureManager.AddPerlineNoise2D("noise", 128, 128, frequency, octaves);
-	textureManager.AddPerlineNoise1D("BinaryDecisionNoise", woodTextureSize, frequency, octaves, [=](float f) {
-		if (f >= 0.6f)
-		{
-			f = 1.f;
-		}
-		else if (f <= 0.4f)
-		{
-			f = 0.f;
-		}
-		else
-		{
-			f = (f - 0.4f) * 5.f;
-		}
+	textureManager.AddTexture(
+		"../Common/ppms/Tropical_Beach/Tropical_Beach_3k.hdr",
+		"skydomeImage",
+		Texture::TextureType::HDR
+	);
 
-		return f; });
-	textureManager.AddPerlineNoise1D("noise1d", woodTextureSize, frequency, octaves);
+	textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "customIrr");
 	textureManager.AddTexture(woodTextureSize, woodTextureSize, "wood");
 
+	glm::ivec2 skySize = textureManager.GetTextureSize("skydomeImage");
+	backgroundImageWidth = skySize.x;
+	backgroundImageHeight = skySize.y;
+	textureManager.AddTexture(backgroundImageWidth, backgroundImageHeight, "irradianceImageProjection");
+	textureManager.AddTexture(backgroundImageWidth, backgroundImageHeight, "irradianceImageProjectionSpare");
+	imageConverterFB.Initialize(&textureManager, "newSky", backgroundImageWidth, backgroundImageHeight);
+	textureManager.AddTexture(woodTextureSize, woodTextureSize, "woodSpecular");
+	textureManager.AddTexture(_windowWidth, _windowHeight, "ambientOcclusionSpare");
 	shadowFB.Initialize(&textureManager, "shadowBuffer", shadowBufferSize, shadowBufferSize);
 	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowSAT");
 	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowSATSpare");
 	textureManager.AddTexture(shadowBufferSize, shadowBufferSize, "shadowBlurred");
 
-	textureManager.AddTexture(
-		"../Common/ppms/MonValley_Lookout/MonValley_A_LookoutPoint_2k.hdr",
-		"skydomeImage",
-		Texture::TextureType::HDR
-	);
-	textureManager.AddTexture(irradianceMapWidth, irradianceMapHeight, "customIrr");
-	glm::ivec2 skySize = textureManager.GetTextureSize("skydomeImage");
-	backgroundImageWidth = skySize.x;
-	backgroundImageHeight = skySize.y;
 
-	imageConverterFB.Initialize(&textureManager, "newSky", backgroundImageWidth, backgroundImageHeight);
-	textureManager.AddTexture(backgroundImageWidth, backgroundImageHeight, "irradianceImageProjection");
-	textureManager.AddTexture(backgroundImageWidth, backgroundImageHeight, "irradianceImageProjectionSpare");
 
 
 
@@ -402,6 +384,22 @@ void Scene1::InitGraphics()
 	textureManager.AddTexture(
 		"../Common/ppms/metal_roof_spec_512x512.ppm",
 		"specularTexture", Texture::TextureType::PPM);
+
+
+	textureManager.AddPerlineNoise2D("HighlightColorNoise", woodTextureSize, woodTextureSize, frequency, octaves);
+	textureManager.AddPerlineNoise1D("ColorDecisionNoise", woodTextureSize, frequency * 4, octaves, [=](float f) {
+		if (f < 0.5f)
+		{
+			f = 0.f;
+		}
+		else
+		{
+			f = (f - 0.5f) * 2.f;
+		}
+
+		return f; });
+	textureManager.AddPerlineNoise1D("RingWidthModulationNoise", woodTextureSize, frequency, octaves);
+	textureManager.AddPerlineNoise2D("DistortionNoise", woodTextureSize, woodTextureSize, frequency, octaves);
 
 	mainObjMesh->SetShader(phongShading);
 	mainObjMesh->Init(centralMesh->getVertexCount(), centralMesh->getVertexBuffer(), centralMesh->getVertexNormals(), centralMesh->getVertexUVs(),
@@ -495,8 +493,8 @@ void Scene1::AddMembersToGUI()
 	MyImGUI::SetShadowReferences(&blurStrength, &bias, &nearDepth, &farDepth);
 	MyImGUI::SetBRDFReferences(&exposure, &contrast, &h.hammersley[1], &h.hammersley[2], &roughness, &useIrradianceMap);
 	MyImGUI::SetAOReferences(&sampledPointsForAO, &influenceRangeForAO, &aoScaler, &aoContrast, &aoBlurWidth, &aoVariance, &aoBlurFlag);
-	MyImGUI::SetNoiseReferences(&frequency, &octaves, &generateNoiseFlag, &scaler);
-	MyImGUI::SetTextureReferences(&earlyColor.x, &lateColor.x, &generateWoodFlag, &generateWoodFlag2);
+	MyImGUI::SetNoiseReferences(&frequency, &octaves, &generateNoiseFlag);
+	MyImGUI::SetTextureReferences(&earlyColor.x, &lateColor.x, &distortionStrength, &colorVariationStrength, &generateWoodFlag);
 }
 void Scene1::Draw2ndPass()
 {
@@ -622,7 +620,7 @@ void Scene1::Draw1stPass()
 	floorObjMesh->SendUniformFloatMatrix4("objToWorld", &floorMatrix[0][0]);
 	floorObjMesh->SendUniformFloatMatrix4("worldToNDC", &worldToNDC[0][0]);
 	textureManager.ActivateTexture(hybridTextureFirstPass, "wood", "diffuseTexture");
-	textureManager.ActivateTexture(hybridTextureFirstPass, "noise", "specularTexture");
+	textureManager.ActivateTexture(hybridTextureFirstPass, "woodSpecular", "specularTexture");
 	floorObjMesh->SendUniformFloat("roughness", roughness);
 
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
@@ -1130,6 +1128,7 @@ void Scene1::ReloadMesh()
 
 void Scene1::HybridRendering()
 {
+	// DispatchIrradianceMapMaker();
 	RenderDeferredObjects();
 
 	CopyDepthInfo();
@@ -1225,20 +1224,20 @@ void Scene1::DrawGBufferRenderTargets()
 {
 	floorObjMesh->SetShader(fboCheckShader);
 	floorObjMesh->PrepareDrawing();
-	textureManager.ActivateTexture(fboCheckShader, "diffuseBuffer", "tex");
+	textureManager.ActivateTexture(fboCheckShader, "wood", "tex");
 	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[0][0][0]);
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
 
 	floorObjMesh->PrepareDrawing();
 	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[1][0][0]);
-	textureManager.ActivateTexture(fboCheckShader, "normalBuffer", "tex");
+	textureManager.ActivateTexture(fboCheckShader, "HighlightColorNoise", "tex");
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
 
 	floorObjMesh->PrepareDrawing();
 	floorObjMesh->SendUniformFloatMatrix4("trans", &gbufferRenderTargetsMatrix[2][0][0]);
-	textureManager.ActivateTexture(fboCheckShader, "ambientOcclusion", "tex");
+	textureManager.ActivateTexture(fboCheckShader, "woodSpecular", "tex");
 	floorObjMesh->Draw(floorMesh->getIndexBufferSize());
 
 	floorObjMesh->SetShader(fboCheckShader);
@@ -1308,6 +1307,8 @@ void Scene1::DrawShadowPass()
 
 
 	shadowFB.RestoreDefaultFrameBuffer();
+	glMemoryBarrier(GL_PIXEL_BUFFER_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT | GL_FRAMEBUFFER_BARRIER_BIT);
+	glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
 }
 
 
@@ -1347,6 +1348,8 @@ void Scene1::DispatchBlurFilter()
 	textureManager.ActivateImage(blurFilterShader->GetShader(), "shadowBlurred", "dst", GL_WRITE_ONLY);
 	blurFilterShader->SendUniformInt("blurStrength", blurStrength);
 	blurFilterShader->Dispatch(shadowBufferSize / 16, shadowBufferSize / 16, 1);
+	glMemoryBarrier(GL_PIXEL_BUFFER_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT | GL_FRAMEBUFFER_BARRIER_BIT);
+	glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
 }
 
 void Scene1::ActivateAppropriateSATImage(GLuint shader)
@@ -1415,6 +1418,8 @@ void Scene1::RecordSkybox()
 	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
 	skyboxFB.RestoreDefaultFrameBuffer();
+	glMemoryBarrier(GL_PIXEL_BUFFER_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT | GL_FRAMEBUFFER_BARRIER_BIT);
+	glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
 }
 
 void Scene1::DispatchIrradianceMapMaker()
@@ -1454,6 +1459,8 @@ void Scene1::DispatchIrradianceMapMaker()
 	irr->SendUniformInt("imageWidth", irradianceMapWidth);
 	irr->SendUniformInt("imageHeight", irradianceMapHeight);
 	irr->Dispatch(irradianceMapWidth / 16, irradianceMapHeight / 16, 1);
+	glMemoryBarrier(GL_PIXEL_BUFFER_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT | GL_FRAMEBUFFER_BARRIER_BIT);
+	glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
 }
 
 glm::vec4 Scene1::CalculateImageProjection(ComputeShaderDispatcher* computeShader, const char* activatedDestinationTextureName)
@@ -1519,7 +1526,6 @@ void Scene1::RecordSkyImage()
 {
 
 	glm::ivec2 skySize = textureManager.GetTextureSize("skydomeImage");
-	//imageConverterFB.Initialize(&textureManager, "newSky", skySize.x, skySize.y);
 	glViewport(0, 0, skySize.x, skySize.y);
 	glm::mat4 mappingMatrix = glm::translate(glm::vec3(-1.f, -1.f, -1.f)) * glm::scale(glm::vec3(2.f));
 	glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1000.0f);
@@ -1602,23 +1608,20 @@ void Scene1::GenerateNewNoiseMap()
 	{
 		generateNoiseFlag = false;
 
-		textureManager.UpdatePerlinNoise1D("BinaryDecisionNoise", frequency, octaves, [=](float f) {
-			if (f >= 0.6f)
-			{
-				f = 1.f;
-			}
-			else if (f <= 0.4f)
+		textureManager.UpdatePerlinNoise1D("ColorDecisionNoise", frequency * 4, octaves, [=](float f) {
+			if (f < 0.5f)
 			{
 				f = 0.f;
 			}
 			else
 			{
-				f = (f - 0.4f) * 5.f;
+				f = (f - 0.5f) * 2.f;
 			}
 			
 			return f; });
-		textureManager.UpdatePerlinNoise1D("noise1d", frequency, octaves);
-		 textureManager.UpdatePerlinNoise2D("noise", frequency, octaves);
+		textureManager.UpdatePerlinNoise1D("RingWidthModulationNoise", frequency, octaves);
+		textureManager.UpdatePerlinNoise2D("DistortionNoise", frequency, octaves);
+		 textureManager.UpdatePerlinNoise2D("HighlightColorNoise", frequency, octaves);
 	}
 }
 
@@ -1628,36 +1631,26 @@ void Scene1::GenerateNewWoodMap()
 	{
 		generateWoodFlag = false;
 
+
+		delete woodTextureGenerator;
+		woodTextureGenerator = new ComputeShaderDispatcher("../Common/542Shaders/As5WoodGenerator.comp");
+
 		woodTextureGenerator->PrepareDrawing();
 
-		textureManager.ActivateTexture(woodTextureGenerator->GetShader(), "noise", "noise2d");
-		textureManager.ActivateTexture(woodTextureGenerator->GetShader(), "noise1d");
-		textureManager.ActivateTexture(woodTextureGenerator->GetShader(), "BinaryDecisionNoise");
+		textureManager.ActivateTexture(woodTextureGenerator->GetShader(), "HighlightColorNoise");
+		textureManager.ActivateTexture(woodTextureGenerator->GetShader(), "ColorDecisionNoise");
+		textureManager.ActivateTexture(woodTextureGenerator->GetShader(), "RingWidthModulationNoise");
+		textureManager.ActivateTexture(woodTextureGenerator->GetShader(), "DistortionNoise");
 		textureManager.ActivateImage(woodTextureGenerator->GetShader(), "wood", "dst", GL_WRITE_ONLY);
+		textureManager.ActivateImage(woodTextureGenerator->GetShader(), "woodSpecular", "dstSpecular", GL_WRITE_ONLY);
 
 		woodTextureGenerator->SendUniformInt("imageSize", woodTextureSize);
 		woodTextureGenerator->SendUniformFloat3("earlyColor", &earlyColor.x);
 		woodTextureGenerator->SendUniformFloat3("lateColor", &lateColor.x);
 
+		woodTextureGenerator->SendUniformFloat("distortionStrength", distortionStrength);
+		woodTextureGenerator->SendUniformFloat("colorVariationStrength", colorVariationStrength);
+
 		woodTextureGenerator->Dispatch(woodTextureSize / 16, woodTextureSize / 16, 1);
-	}
-
-	if (generateWoodFlag2)
-	{
-		generateWoodFlag2 = false;
-
-
-		woodTextureGenerator2->PrepareDrawing();
-
-		textureManager.ActivateTexture(woodTextureGenerator2->GetShader(), "noise1d");
-		textureManager.ActivateTexture(woodTextureGenerator2->GetShader(), "BinaryDecisionNoise");
-		textureManager.ActivateImage(woodTextureGenerator2->GetShader(), "wood", "dst", GL_WRITE_ONLY);
-
-		woodTextureGenerator2->SendUniformInt("imageSize", woodTextureSize);
-		woodTextureGenerator2->SendUniformFloat3("earlyColor", &earlyColor.x);
-		woodTextureGenerator2->SendUniformFloat3("lateColor", &lateColor.x);
-
-		woodTextureGenerator2->Dispatch(woodTextureSize / 16, woodTextureSize / 16, 1);
-
 	}
 }

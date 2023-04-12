@@ -87,12 +87,12 @@ namespace MyImGUI {
     double* frequency;
     int* octaves;
     bool* generateNoise;
-    float* noiseScaler;
 
     float* earlyColor;
     float* lateColor;
+    float* distortionStrength;
+    float* colorVariationStrength;
     bool* generateWood;
-    bool* generateWood2;
 
     namespace Helper
     {
@@ -304,20 +304,20 @@ void MyImGUI::SetAOReferences(int* _sampledPointsForAO, float* _influenceRangeFo
     aoBlurFlag = _aoBlurFlag;
 }
 
-void MyImGUI::SetNoiseReferences(double* _frequency, int* _octaves, bool* _generateNoise, float* _scaler)
+void MyImGUI::SetNoiseReferences(double* _frequency, int* _octaves, bool* _generateNoise)
 {
     frequency = _frequency;
     octaves = _octaves;
     generateNoise = _generateNoise;
-    noiseScaler = _scaler;
 }
 
-void MyImGUI::SetTextureReferences(float* _earlyColor, float* _lateColor, bool* _generateWood, bool* _generateWood2)
+void MyImGUI::SetTextureReferences(float* _earlyColor, float* _lateColor, float* _distortionStrength, float* _colorVariationStrength, bool* _generateWood)
 {
     earlyColor = _earlyColor;
     lateColor = _lateColor;
     generateWood = _generateWood;
-    generateWood2 = _generateWood2;
+    distortionStrength = _distortionStrength;
+    colorVariationStrength = _colorVariationStrength;
 }
 
 void MyImGUI::Helper::MaterialSetup()
@@ -566,7 +566,6 @@ void MyImGUI::Helper::PerlinNoise()
         ImGui::InputDouble("Frequency", frequency);
         *frequency = std::clamp(*frequency, 0.1, 64.0);
         ImGui::SliderInt("Octaves", octaves, 1, 16);
-        ImGui::SliderFloat("Noise Scaler", noiseScaler, 1.f, 20.f);
 
         if (ImGui::Button("Generate new noise map"))
         {
@@ -581,13 +580,11 @@ void MyImGUI::Helper::Texture()
     {
         ImGui::ColorEdit3("Early Color", earlyColor);
         ImGui::ColorEdit3("Late Color", lateColor);
+        ImGui::SliderFloat("Distortion Strength", distortionStrength, 1.f, 100.f);
+        ImGui::SliderFloat("Color variation Strength", colorVariationStrength, -1.f, 1.f);
         if (ImGui::Button("Generate new wood texture"))
         {
             *generateWood = true;
-        }
-        if (ImGui::Button("Generate new wood texture2"))
-        {
-            *generateWood2 = true;
         }
     }
 }

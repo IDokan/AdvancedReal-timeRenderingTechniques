@@ -299,11 +299,10 @@ private:
 	glm::vec3 earlyColor;
 	glm::vec3 lateColor;
 	ComputeShaderDispatcher* woodTextureGenerator;
-	ComputeShaderDispatcher* woodTextureGenerator2;
 	bool generateWoodFlag;
-	bool generateWoodFlag2;
 	int woodTextureSize;
-	float scaler;
+	float distortionStrength;
+	float colorVariationStrength;
 };
 
 #endif // CS542_SCENE1_H

@@ -34,5 +34,5 @@ void main()
 	normalBuffer.xyz = normalize(fragNormal);
 	diffuseBuffer = vec4(pow(texture(diffuseTexture, fragUV).rgb, vec3(2.2)), 1);
 	
-	specularBuffer = vec4(pow(texture(specularTexture, fragUV).rgb, vec3(2.2)), roughness);
+	specularBuffer = pow(texture(specularTexture, fragUV).rgba, vec4(2.2));
 }

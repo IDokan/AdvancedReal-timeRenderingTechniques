@@ -15,29 +15,32 @@
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
-uniform sampler2D noise2d;
-uniform sampler1D noise1d;
-uniform sampler1D BinaryDecisionNoise;
+uniform sampler2D HighlightColorNoise;
+uniform sampler2D DistortionNoise;
+uniform sampler1D ColorDecisionNoise;
+uniform sampler1D RingWidthModulationNoise;
 layout(rgba32f) uniform restrict writeonly image2D dst;
+layout(rgba32f) uniform restrict writeonly image2D dstSpecular;
 
 uniform vec3 earlyColor;
 uniform vec3 lateColor;
 uniform int imageSize;
 
-uniform float scaler;
+uniform float distortionStrength;
+uniform float colorVariationStrength;
 
 void main()
 {
 	ivec2 gpos = ivec2(gl_GlobalInvocationID.xy);
+
+	float distortedRadius = texture(DistortionNoise, vec2(gpos) / imageSize).r;
 	
-	uint i = gl_LocalInvocationID.x;
-
-	float basicGrowthRing = texture(BinaryDecisionNoise, float(gpos.x) / imageSize).r;
+	float colorDecision = texture(ColorDecisionNoise, (float(gpos.x+ (distortedRadius * distortionStrength)) / imageSize )).r;
 	vec4 result;
-	result.xyz = mix(earlyColor, lateColor, basicGrowthRing);
+	result.xyz = mix(earlyColor, lateColor, colorDecision);
 
-	float highlightColor = texture(noise2d, vec2(gpos) / imageSize).r;
-	float colorVariation = 1 - (highlightColor / 5.f) + (texture(noise1d, float(gpos.x) / imageSize).r  / 10.f);
+	float highlightColor = texture(HighlightColorNoise, vec2(gpos) / imageSize).r;
+	float colorVariation = 1 + (highlightColor * colorVariationStrength);
 	result.x = pow(result.x, colorVariation);
 	result.y = pow(result.y, colorVariation);
 	result.z = pow(result.z, colorVariation);
@@ -45,4 +48,7 @@ void main()
 	result.w = 1.f;
 
 	imageStore(dst, gpos, result);
+	vec4 specularResult;
+	specularResult = vec4(mix(1.f, 0.5f, colorDecision));
+	imageStore(dstSpecular, gpos, specularResult);
 }
